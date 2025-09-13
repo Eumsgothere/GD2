@@ -1,0 +1,66 @@
+using System.Runtime.ConstrainedExecution;
+using UnityEngine;
+
+public class Cubescript : MonoBehaviour
+{
+    float Ctr1, ctr2;
+    //float sp = .01f;
+    // Transform cubeTrans;
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    MeshRenderer cubeRenderer;
+    void Start()
+    {
+         Ctr1 = 0;
+        ctr2 = 0;
+        //cubeTrans = GetComponent<Transform>();
+        //cubeTrans.position = new Vector3(0, 0, 0);
+        cubeRenderer = GetComponent<MeshRenderer>();
+        //cubeRenderer.material.color = Color.aliceBlue;
+        //cubeRenderer.material.color = new Color(.7f,.6f,.3f);
+        //cubeRenderer.material.color = new Color(Random.Range(0f,0.7f), Random.Range(0f, 0.7f), Random.Range(0f, 0.7f));
+        //0-255 : 20
+        //20/256 =
+
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        //cubeTrans.position = new Vector3(2, 3, cubeTrans.position.z-.001f);
+        //cubeTrans.eulerAngles = new Vector3(cubeTrans.eulerAngles.x, cubeTrans.eulerAngles.y + 1f, cubeTrans.eulerAngles.z);
+        //Ctr += Time.deltaTime;
+        //if(Ctr <= 1)
+        //cubeTrans.localScale = new Vector3(cubeTrans.localScale.x + 0.01f, cubeTrans.localScale.y + 0.01f, cubeTrans.localScale.z + 0.01f);
+        //{ Debug.Log(Ctr); }
+        //cubeTrans.Translate(-.1f, .1f, -.01F);
+        //cubeTrans.Rotate(1, 0, 1);
+
+        //cubeTrans.Translate(sp, 0, 0);
+        //if (cubeTrans.position.x >= 15)
+        //{
+        // sp = -.1f;
+        //}
+        // else if (cubeTrans.position.x <= -15)
+        //{
+        // sp = 0.1f;
+        //}
+        Ctr1 += Time.deltaTime;
+      if (Ctr1 >= 2)
+        {
+            cubeRenderer.material.color = new Color(Random.Range(0f, 0.7f), Random.Range(0f, 0.7f), Random.Range(0f, 0.7f));
+            Ctr1 = 0;
+     
+        }
+        //ctr2 += Time.deltaTime;
+        //if (ctr2 >= 10)
+        //{
+        // Destroy(gameObject);
+        //}
+        //Destroy(gameObject, 10);
+        Destroy(GetComponent<BoxCollider>(), 10);
+    
+            
+
+    }
+}
+    
