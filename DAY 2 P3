@@ -1,0 +1,76 @@
+using UnityEngine;
+
+public class AvatarMovement : MonoBehaviour
+{
+
+    GameObject cubeObject, sphereObject;
+    MeshRenderer cubeRenderer, sphererenderer;
+    Transform cubeTrans, sphereTrans;
+
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    void Start()
+    {
+        cubeObject = GameObject.Find("Cube");
+        cubeObject = GameObject.Find("Sphere");
+        cubeTrans = cubeObject.GetComponent<Transform>();
+        cubeTrans = cubeObject.GetComponent<Transform>();
+        cubeRenderer = GetComponent<MeshRenderer>();
+        sphererenderer = GetComponent<MeshRenderer>();
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow))
+        {
+            transform.Translate(0, 0, .01f);
+        }
+        if (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow))
+        {
+            transform.Translate(0, 0, -.01f);
+        }
+        if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow))
+        {
+            transform.Translate(-.01f, 0, 0);
+        }
+        if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow))
+        {
+            transform.Translate(.01f, 0, 0);
+        }
+        float AvatarRotateX = Input.GetAxis("Mouse X");
+        transform.Rotate(AvatarRotateX, 0, 0);
+        float AvatarRotateY = Input.GetAxis("Mouse X");
+        transform.Rotate(0, AvatarRotateY, 0);
+        //float AvatarRotateZ = Input.GetAxis("Mouse Z");
+        //transform.Rotate(0,0 , AvatarRotateZ);
+
+        if (cubeRenderer.bounds.Intersects(sphererenderer.bounds))
+        {
+            cubeRenderer.material.color = Color.blue;
+            sphererenderer.material.color = Color.blue;
+        }
+        else
+        {
+            cubeRenderer.material.color = Color.yellow;
+            sphererenderer.material.color = Color.yellow;
+        }
+    }
+
+    //if (Input.GetKeyUp(KeyCode.A))
+    //{
+    //    Debug.Log("TX34");  
+    //}
+    //if (Input.GetButton("Fire1"))
+    //{
+    //    Debug.Log("TX34");
+    //}
+    //if(Input.GetMouseButton(0))
+    // {
+    //     Debug.Log("TX34");
+    // }
+    //Debug.Log(Input.GetAxis("Horizontal"));//AD,LEFT/RIGHT ARROW KEYS
+    //Debug.Log(Input.GetAxis("Vertical"));//WD, UP/DOWN, ARROW KEYS
+    // Debug.Log(Input.GetAxis("Mouse Y"));//WD, UP/DOWN, ARROW KEYS
+
+}
+
