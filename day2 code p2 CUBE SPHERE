@@ -1,0 +1,38 @@
+using UnityEngine;
+
+public class SphereScript : MonoBehaviour
+{
+    GameObject cubeObject;
+    MeshRenderer cubeRenderer;
+    MeshRenderer sphereRenderer;
+
+    void Start()
+    {
+    
+        cubeObject = GameObject.Find("Cube");
+
+    
+        if (cubeObject != null)
+            cubeRenderer = cubeObject.GetComponent<MeshRenderer>();
+
+     
+        sphereRenderer = GetComponent<MeshRenderer>();
+    }
+
+    void Update()
+    {
+        if (cubeRenderer != null && sphereRenderer != null)
+        {
+            if (cubeRenderer.bounds.Intersects(sphereRenderer.bounds))
+            {
+                cubeRenderer.material.color = Color.blue;
+                sphereRenderer.material.color = Color.blue;
+            }
+            else
+            {
+                cubeRenderer.material.color = Color.yellow;
+                sphereRenderer.material.color = Color.yellow;
+            }
+        }
+    }
+}
