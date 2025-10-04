@@ -39,9 +39,9 @@ public class Player_script : MonoBehaviour
     [SerializeField] private float orbitRadius = 1.5f;
     [SerializeField] private float orbitSpeed = 80f;
 
-    private bool isReloading = false;
-    private float reloadTimer = 0f;
-    private float reloadDuration = 1.5f; // how long reloading (and orbit) lasts
+    private bool isSwitch = false;
+    private float switchTimer = 0f;
+    private float switchDuration = 1.5f;
 
     private void Start()
     {
@@ -111,6 +111,8 @@ public class Player_script : MonoBehaviour
     {
         currentBallType = (currentBallType == BallType.Blue) ? BallType.Red : BallType.Blue;
         Debug.Log("Switched to " + currentBallType + " ball!");
+        isSwitch = true;
+        switchTimer = 0f;
     }
 
     private void Shoot_performed(InputAction.CallbackContext obj)
@@ -132,11 +134,9 @@ public class Player_script : MonoBehaviour
         }
 
         // Destroy ball after 5 seconds
-        Object.Destroy(thrownBall, 5f);
+        Object.Destroy(thrownBall, 3f);
 
-        // Begin reload/orbit animation
-        isReloading = true;
-        reloadTimer = 0f;
+        
     }
 
     private void FixedUpdate()
@@ -156,18 +156,18 @@ public class Player_script : MonoBehaviour
         float rotation = lookAction.ReadValue<Vector2>().x;
         transform.Rotate(0, rotation, 0);
 
-        // Orbit only when reloading
-        if (isReloading)
+
+        if (isSwitch)
         {
-            reloadTimer += Time.fixedDeltaTime;
+            switchTimer += Time.fixedDeltaTime;
 
             if (blueBallOrbit != null)
                 blueBallOrbit.transform.RotateAround(transform.position, Vector3.up, orbitSpeed * Time.fixedDeltaTime);
             if (redBallOrbit != null)
                 redBallOrbit.transform.RotateAround(transform.position, Vector3.up, orbitSpeed * Time.fixedDeltaTime);
 
-            if (reloadTimer >= reloadDuration)
-                isReloading = false;
+            if (switchTimer >= switchDuration)
+                isSwitch = false;
         }
     }
 }
