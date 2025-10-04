@@ -1,0 +1,43 @@
+using UnityEngine;
+
+public class SphereRed : MonoBehaviour
+{
+    [SerializeField] private Renderer SphereredRenderer;
+    [SerializeField] private Color redColor = Color.red;
+
+
+    private Color currentColor;
+    private int correctHits = 0;
+
+    private void Start()
+    {
+        if (SphereredRenderer == null)
+            SphereredRenderer = GetComponent<Renderer>();
+        currentColor = redColor;
+        SphereredRenderer.material.color = currentColor;
+
+    }
+
+    private void Update()
+    {     
+    }
+
+    public void RegisterHit(string ballTag)
+    {
+        // Match check
+        if (currentColor == redColor && ballTag == "RedBall")
+        {
+            correctHits++;
+            Debug.Log("Correct hit! Count = " + correctHits);
+
+            if (correctHits >= 1)
+            {
+                Destroy(gameObject);
+            }
+        }
+        else
+        {
+            Debug.Log("Wrong color hit!");
+        }
+    }  
+}
