@@ -1,0 +1,32 @@
+using UnityEngine;
+
+public class BallScript : MonoBehaviour
+{
+    public Rigidbody ballRigid;
+
+    public void Shoot(Vector3 direction, float force)
+    {
+        ballRigid = GetComponent<Rigidbody>();
+        ballRigid.isKinematic = false;
+        ballRigid.AddRelativeForce(0, 0, 3000);
+    }
+
+    public void OnCollisionEnter(Collision collision)
+    {
+        if (collision.gameObject.CompareTag("TargetWall"))
+        {
+
+            TargetWall wall = collision.gameObject.GetComponent<TargetWall>();
+            if (wall != null)
+            {
+                wall.RegisterHit(gameObject.tag);
+            }
+
+            Destroy(gameObject);
+        }
+    }
+    void Update()
+    {
+        ballRigid.AddTorque(1, 1, 1);
+    }
+}
