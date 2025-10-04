@@ -1,37 +1,68 @@
 using UnityEngine;
 
-public class RotatingDoor : MonoBehaviour
+public class TargetWall : MonoBehaviour
 {
-    private static RotatingDoor instance;
-    private bool isOpening = false;
-    private float openAngle = 90f;      // how far to open
-    private float rotationSpeed = 45f;  // degrees per second
-    private float rotated = 0f;
+    [SerializeField] private Renderer wallRenderer;
+    [SerializeField] private Color blueColor = Color.blue;
+    [SerializeField] private Color redColor = Color.red;
+    [SerializeField] private GameObject slidingWall; // assign in Inspector
 
-    private void Awake()
+    private Color currentColor;
+    private int correctHits = 0;
+    private float timer = 0f;
+    private float changeInterval = 1f; // every second
+
+    private void Start()
     {
-        instance = this;
+        if (wallRenderer == null)
+            wallRenderer = GetComponent<Renderer>();
+
+        ChangeColor();
     }
 
     private void Update()
     {
-        if (isOpening && rotated < openAngle)
+        timer += Time.deltaTime;
+        if (timer >= changeInterval)
         {
-            float rotateAmount = rotationSpeed * Time.deltaTime;
-            transform.Rotate(Vector3.up, rotateAmount);
-            rotated += rotateAmount;
+            timer = 0f;
+            ChangeColor();
         }
     }
 
-    public static void OpenDoor()
+    private void ChangeColor()
     {
-        if (instance != null)
+        currentColor = (Random.value > 0.5f) ? blueColor : redColor;
+        wallRenderer.material.color = currentColor;
+    }
+
+    public void RegisterHit(string ballTag)
+    {
+        // Match check
+        if ((currentColor == blueColor && ballTag == "BlueBall") ||
+            (currentColor == redColor && ballTag == "RedBall"))
         {
-            instance.isOpening = true;
+            correctHits++;
+            Debug.Log("Correct hit! Count = " + correctHits);
+
+            if (correctHits >= 3)
+            {
+                OpenSlidingWall();
+            }
         }
         else
         {
-            Debug.LogWarning("⚠️ No RotatingDoor found in the scene!");
+            Debug.Log("Wrong color hit!");
+        }
+    }
+
+    private void OpenSlidingWall()
+    {
+        Debug.Log("Sliding wall opened!");
+
+        if (slidingWall != null)
+        {
+            slidingWall.transform.position += Vector3.up * 5f;
         }
     }
 }
