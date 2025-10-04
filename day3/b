@@ -2,42 +2,47 @@ using UnityEngine;
 
 public class SphereRed : MonoBehaviour
 {
-    [SerializeField] private Renderer SphereredRenderer;
+    [SerializeField] private Renderer sphereRenderer;
     [SerializeField] private Color redColor = Color.red;
-
 
     private Color currentColor;
     private int correctHits = 0;
 
     private void Start()
     {
-        if (SphereredRenderer == null)
-            SphereredRenderer = GetComponent<Renderer>();
+        // Make sure we have a renderer
+        if (sphereRenderer == null)
+            sphereRenderer = GetComponent<Renderer>();
+
         currentColor = redColor;
-        SphereredRenderer.material.color = currentColor;
-
-    }
-
-    private void Update()
-    {     
+        sphereRenderer.material.color = currentColor;
     }
 
     public void RegisterHit(string ballTag)
     {
-        // Match check
-        if (currentColor == redColor && ballTag == "RedBall")
+        // Only respond to RedBall tag
+        if (ballTag == "RedBall")
         {
             correctHits++;
-            Debug.Log("Correct hit! Count = " + correctHits);
+            Debug.Log($"Correct hit on {gameObject.name}! Count = {correctHits}");
 
             if (correctHits >= 1)
             {
-                Destroy(gameObject);
+                Destroy(gameObject); // destroy target when hit
             }
         }
         else
         {
-            Debug.Log("Wrong color hit!");
+            Debug.Log($"Wrong color hit: {ballTag} hit {gameObject.name}");
         }
-    }  
+    }
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        // Automatically detect hits from balls
+        if (collision.gameObject.CompareTag("RedBall") || collision.gameObject.CompareTag("BlueBall"))
+        {
+            RegisterHit(collision.gameObject.tag);
+        }
+    }
 }
