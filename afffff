@@ -1,0 +1,26 @@
+using System.Runtime.ConstrainedExecution;
+using UnityEngine;
+
+public class FinalPlat : MonoBehaviour
+{
+    float sp = .01f;
+    Transform cubeTrans;
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    void Start()
+    {
+    }
+    // Update is called once per frame
+    void Update()
+    {
+
+        if (cubeTrans.position.z >= 15)
+        {
+            sp = -.1f;
+        }
+        else if (cubeTrans.position.z <= -15)
+        {
+            sp = 0.1f;
+        }    
+
+    }
+}
