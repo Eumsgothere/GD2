@@ -1,68 +1,55 @@
 using UnityEngine;
 
-public class TargetWall : MonoBehaviour
+public class SphereRed : MonoBehaviour
 {
-    [SerializeField] private Renderer wallRenderer;
-    [SerializeField] private Color blueColor = Color.blue;
+    [SerializeField] private Renderer sphereRenderer;
     [SerializeField] private Color redColor = Color.red;
-    [SerializeField] private GameObject slidingWall; // assign in Inspector
+    [SerializeField] private Color blueColor = Color.blue;
 
     private Color currentColor;
     private int correctHits = 0;
-    private float timer = 0f;
-    private float changeInterval = 1f; // every second
 
     private void Start()
     {
-        if (wallRenderer == null)
-            wallRenderer = GetComponent<Renderer>();
+        if (sphereRenderer == null)
+            sphereRenderer = GetComponent<Renderer>();
 
-        ChangeColor();
-    }
-
-    private void Update()
-    {
-        timer += Time.deltaTime;
-        if (timer >= changeInterval)
-        {
-            timer = 0f;
-            ChangeColor();
-        }
-    }
-
-    private void ChangeColor()
-    {
         currentColor = (Random.value > 0.5f) ? blueColor : redColor;
-        wallRenderer.material.color = currentColor;
+        sphereRenderer.material.color = currentColor;
     }
 
     public void RegisterHit(string ballTag)
     {
-        // Match check
-        if ((currentColor == blueColor && ballTag == "BlueBall") ||
-            (currentColor == redColor && ballTag == "RedBall"))
+        // Only respond to RedBall tag
+        if (ballTag == "RedBall")
         {
             correctHits++;
-            Debug.Log("Correct hit! Count = " + correctHits);
 
-            if (correctHits >= 3)
+            if (correctHits >= 1)
             {
-                OpenSlidingWall();
+                Destroy(gameObject); 
             }
         }
-        else
+        if (ballTag == "BlueBall")
         {
-            Debug.Log("Wrong color hit!");
+            correctHits++;
+
+            if (correctHits >= 1)
+            {
+                Destroy(gameObject);
+            }
         }
     }
 
-    private void OpenSlidingWall()
+    private void OnCollisionEnter(Collision collision)
     {
-        Debug.Log("Sliding wall opened!");
-
-        if (slidingWall != null)
+        if (collision.gameObject.CompareTag("RedBall") || collision.gameObject.CompareTag("BlueBall"))
         {
-            slidingWall.transform.position += Vector3.up * 5f;
+            RegisterHit(collision.gameObject.tag);
+        }
+        if (collision.gameObject.CompareTag("BlueBall") || collision.gameObject.CompareTag("RedBall"))
+        {
+            RegisterHit(collision.gameObject.tag);
         }
     }
 }
