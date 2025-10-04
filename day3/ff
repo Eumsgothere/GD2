@@ -1,0 +1,83 @@
+using UnityEngine;
+
+public class Player_script : MonoBehaviour
+{
+    [Header("Orbiting Balls")]
+    public GameObject blueBallPrefab;
+    public GameObject redBallPrefab;
+    public float orbitRadius = 2f;
+    public float orbitSpeed = 100f;
+
+    [Header("Shooting")]
+    public Transform shootPoint;
+    public float shootForce = 20f;
+
+    [Header("Switch")]
+    private bool isBlueActive = true;
+    private GameObject blueBall;
+    private GameObject redBall;
+
+    void Start()
+    {
+        // Spawn both balls at start
+        blueBall = Instantiate(blueBallPrefab, transform.position + Vector3.right * orbitRadius, Quaternion.identity);
+        redBall = Instantiate(redBallPrefab, transform.position - Vector3.right * orbitRadius, Quaternion.identity);
+    }
+
+    void Update()
+    {
+        OrbitBalls();
+
+        // Switch active ball (e.g., press Q)
+        if (Input.GetKeyDown(KeyCode.Q))
+        {
+            isBlueActive = !isBlueActive;
+        }
+
+        // Shoot active ball
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            ShootActiveBall();
+        }
+    }
+
+    void OrbitBalls()
+    {
+        if (blueBall != null)
+        {
+            blueBall.transform.RotateAround(transform.position, Vector3.up, orbitSpeed * Time.deltaTime);
+        }
+
+        if (redBall != null)
+        {
+            redBall.transform.RotateAround(transform.position, Vector3.up, orbitSpeed * Time.deltaTime);
+        }
+    }
+
+    void ShootActiveBall()
+    {
+        GameObject activeBall = isBlueActive ? blueBall : redBall;
+
+        if (activeBall != null && shootPoint != null)
+        {
+            Rigidbody rb = activeBall.GetComponent<Rigidbody>();
+            if (rb == null) rb = activeBall.AddComponent<Rigidbody>();
+
+            // Detach and shoot
+            activeBall.transform.parent = null;
+            rb.isKinematic = false;
+            rb.useGravity = true;
+            rb.AddForce(shootPoint.forward * shootForce, ForceMode.Impulse);
+
+            // Respawn a new ball to orbit again
+            if (isBlueActive)
+            {
+                blueBall = Instantiate(blueBallPrefab, transform.position + Vector3.right * orbitRadius, Quaternion.identity);
+            }
+            else
+            {
+                redBall = Instantiate(redBallPrefab, transform.position - Vector3.right * orbitRadius, Quaternion.identity);
+            }
+        }
+    }
+}
