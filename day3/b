@@ -1,94 +1,171 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
-public class TargetWall : MonoBehaviour
+public class Player_script : MonoBehaviour
 {
-    [SerializeField] private Renderer wallRenderer;
-    [SerializeField] private Color blueColor = Color.blue;
-    [SerializeField] private Color redColor = Color.red;
-    [SerializeField] private GameObject slidingWall; // assign in Inspector
-    [SerializeField] private float slideDistance = 5f;
-    [SerializeField] private float slideSpeed = 2f;
+    public Transform respawnPoint;
+    public float fallLimit = -10f;
 
-    private Color currentColor;
-    private int correctHits = 0;
-    private float timer = 0f;
-    private float changeInterval = 1f; // change color every second
-    private bool isOpening = false;
-    private Vector3 initialDoorPos;
-    private Vector3 targetDoorPos;
+    [Header("Input Settings")]
+    [SerializeField] private InputActionAsset inputAction;
+
+    [Header("References")]
+    [SerializeField] private CharacterController characterController;
+    [SerializeField] private GameObject blueBallPrefab;
+    [SerializeField] private GameObject redBallPrefab;
+    [SerializeField] private Transform shootPoint;
+
+    [Header("Player Movement")]
+    [SerializeField] private float moveSpeed = 10f;
+    [SerializeField] private float jumpForce = 30f;
+    [SerializeField] private float gravity = -9.81f;
+    [SerializeField] private float shootForce = 20f;
+
+    private InputAction moveAction;
+    private InputAction lookAction;
+    private InputAction jumpAction;
+    private InputAction shootAction;
+    private InputAction switchBallAction;
+
+    private float verticalVelocity;
+    private Vector3 spawnPoint;
+
+    private enum BallType { Blue, Red }
+    private BallType currentBallType = BallType.Blue;
+
+    // Orbiting balls
+    private GameObject blueBallOrbit;
+    private GameObject redBallOrbit;
+    [SerializeField] private float orbitRadius = 1.5f;
+    [SerializeField] private float orbitSpeed = 80f;
+
+    private bool isSwitch = false;
+    private float switchTimer = 0f;
+    private float switchDuration = 1.5f;
 
     private void Start()
     {
-        if (wallRenderer == null)
-            wallRenderer = GetComponent<Renderer>();
+        var playerMap = inputAction.FindActionMap("Player");
+        moveAction = playerMap.FindAction("Move");
+        lookAction = playerMap.FindAction("Look");
+        jumpAction = playerMap.FindAction("Jump");
+        shootAction = playerMap.FindAction("Shoot");
+        switchBallAction = playerMap.FindAction("SwitchBall");
 
-        if (slidingWall != null)
-            initialDoorPos = slidingWall.transform.position;
+        jumpAction.performed += Jump_performed;
+        shootAction.performed += Shoot_performed;
+        switchBallAction.performed += SwitchBall_performed;
 
-        ChangeColor();
+        characterController = GetComponent<CharacterController>();
+        spawnPoint = transform.position;
+
+        // Create orbiting balls once and keep them
+        blueBallOrbit = CreateBall(blueBallPrefab, transform.position + Vector3.right * orbitRadius);
+        redBallOrbit = CreateBall(redBallPrefab, transform.position + Vector3.left * orbitRadius);
+
+        SetBallKinematic(blueBallOrbit, true);
+        SetBallKinematic(redBallOrbit, true);
     }
 
-    private void Update()
+    private GameObject CreateBall(GameObject prefab, Vector3 position)
     {
-        // Randomly switch color every second
-        timer += Time.deltaTime;
-        if (timer >= changeInterval)
-        {
-            timer = 0f;
-            ChangeColor();
-        }
-
-        // Smoothly slide door upward
-        if (isOpening && slidingWall != null)
-        {
-            slidingWall.transform.position = Vector3.MoveTowards(
-                slidingWall.transform.position,
-                targetDoorPos,
-                slideSpeed * Time.deltaTime
-            );
-        }
+        GameObject ball = Object.Instantiate(prefab, position, Quaternion.identity);
+        return ball;
     }
 
-    private void ChangeColor()
+    private void SetBallKinematic(GameObject ball, bool state)
     {
-        currentColor = (Random.value > 0.5f) ? blueColor : redColor;
-        wallRenderer.material.color = currentColor;
+        if (ball.TryGetComponent(out Rigidbody rb))
+            rb.isKinematic = state;
     }
 
-    private void OnCollisionEnter(Collision collision)
+    private void OnEnable() => inputAction.FindActionMap("Player").Enable();
+    private void OnDisable() => inputAction.FindActionMap("Player").Disable();
+
+    private void Respawn()
     {
-        // Detect ball collision
-        if (!collision.gameObject.CompareTag("RedBall") && !collision.gameObject.CompareTag("BlueBall"))
-            return;
-
-        string ballTag = collision.gameObject.tag;
-
-        // Check if the color matches
-        if ((currentColor == blueColor && ballTag == "BlueBall") ||
-            (currentColor == redColor && ballTag == "RedBall"))
+        if (respawnPoint != null)
         {
-            correctHits++;
-            Debug.Log("✅ Correct hit! Count = " + correctHits);
+            transform.position = respawnPoint.position;
+            transform.rotation = respawnPoint.rotation;
 
-            if (correctHits >= 3)
+            if (TryGetComponent(out Rigidbody rb))
             {
-                OpenSlidingWall();
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
             }
         }
         else
         {
-            Debug.Log("❌ Wrong color hit!");
+            Debug.LogWarning("No respawn point assigned to Player_script!");
         }
-
-        Destroy(collision.gameObject); // optional: remove ball after hit
     }
 
-    private void OpenSlidingWall()
+    private void Jump_performed(InputAction.CallbackContext obj)
     {
-        if (isOpening || slidingWall == null) return;
+        if (characterController.isGrounded)
+            verticalVelocity = jumpForce;
+    }
 
-        Debug.Log("🚪 Sliding wall opening...");
-        targetDoorPos = initialDoorPos + Vector3.up * slideDistance;
-        isOpening = true;
+    private void SwitchBall_performed(InputAction.CallbackContext obj)
+    {
+        currentBallType = (currentBallType == BallType.Blue) ? BallType.Red : BallType.Blue;
+        Debug.Log("Switched to " + currentBallType + " ball!");
+        isSwitch = true;
+        switchTimer = 0f;
+    }
+
+    private void Shoot_performed(InputAction.CallbackContext obj)
+    {
+        GameObject prefabToShoot = (currentBallType == BallType.Blue) ? blueBallPrefab : redBallPrefab;
+
+        GameObject thrownBall = Object.Instantiate(prefabToShoot, shootPoint.position, shootPoint.rotation);
+
+
+        if (thrownBall.TryGetComponent(out BallScript ballScript))
+        {
+            ballScript.Shoot(shootPoint.forward, shootForce);
+        }
+        else
+        {
+            Debug.LogWarning("Thrown ball is missing BallScript!");
+        }
+
+        // Destroy ball after 5 seconds
+        Object.Destroy(thrownBall, 3f);
+
+        
+    }
+
+    private void FixedUpdate()
+    {
+        // Movement
+        Vector2 move = moveAction.ReadValue<Vector2>();
+        Vector3 moveDir = transform.TransformDirection(new Vector3(move.x, 0, move.y)) * moveSpeed;
+
+        if (characterController.isGrounded && verticalVelocity < 0)
+            verticalVelocity = -2f;
+
+        verticalVelocity += gravity * Time.fixedDeltaTime;
+        moveDir.y = verticalVelocity;
+
+        characterController.Move(moveDir * Time.fixedDeltaTime);
+
+        float rotation = lookAction.ReadValue<Vector2>().x;
+        transform.Rotate(0, rotation, 0);
+
+
+        if (isSwitch)
+        {
+            switchTimer += Time.fixedDeltaTime;
+
+            if (blueBallOrbit != null)
+                blueBallOrbit.transform.RotateAround(transform.position, Vector3.up, orbitSpeed * Time.fixedDeltaTime);
+            if (redBallOrbit != null)
+                redBallOrbit.transform.RotateAround(transform.position, Vector3.up, orbitSpeed * Time.fixedDeltaTime);
+
+            if (switchTimer >= switchDuration)
+                isSwitch = false;
+        }
     }
 }
