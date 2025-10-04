@@ -1,56 +1,73 @@
 using UnityEngine;
 
-public class SphereTarget : MonoBehaviour
+public class SphereRed : MonoBehaviour
 {
     [SerializeField] private Renderer sphereRenderer;
     [SerializeField] private Color redColor = Color.red;
     [SerializeField] private Color blueColor = Color.blue;
 
     private Color currentColor;
-    private static int totalTargets;       // total spheres in scene
-    private static int destroyedTargets;   // how many are gone
+    private int correctHits = 0;
 
     private void Start()
     {
         if (sphereRenderer == null)
             sphereRenderer = GetComponent<Renderer>();
 
-        // Count how many targets exist in the scene
-        totalTargets = FindObjectsOfType<SphereTarget>().Length;
-
-        // Randomly choose red or blue
         currentColor = (Random.value > 0.5f) ? blueColor : redColor;
         sphereRenderer.material.color = currentColor;
     }
 
+    public void RegisterHit(string ballTag)
+    {
+        // Only respond to RedBall tag
+        if (ballTag == "RedBall")
+        {
+            correctHits++;
+            Debug.Log("Correct hit! Count = " + correctHits);
+            if (correctHits >= 1)
+            {
+                Destroy(gameObject);
+             
+
+            }
+        }
+        if (ballTag == "BlueBall")
+        {
+            correctHits++;
+            Debug.Log("Correct hit! Count = " + correctHits);
+            if (correctHits >= 1)
+            {
+                Destroy(gameObject);
+                
+            }
+           
+        }
+        if (correctHits >= 5)
+        {
+            Debug.Log("Correct hit! Count = " + correctHits);
+            //RotatingDoor.OpenDoor();
+        }
+    }
+
     private void OnCollisionEnter(Collision collision)
     {
-        // Only respond to red or blue balls
+
         if (!collision.gameObject.CompareTag("RedBall") && !collision.gameObject.CompareTag("BlueBall"))
             return;
 
         bool isRedTarget = currentColor == redColor;
         string ballTag = collision.gameObject.tag;
 
-        // Destroy only if colors match
         if ((isRedTarget && ballTag == "RedBall") || (!isRedTarget && ballTag == "BlueBall"))
         {
-            destroyedTargets++;
             Destroy(gameObject);
-            CheckAllTargetsDestroyed();
         }
         else
         {
             Debug.Log("Wrong color hit!");
         }
+        
     }
-
-    private void CheckAllTargetsDestroyed()
-    {
-        if (destroyedTargets >= totalTargets)
-        {
-            Debug.Log("✅ All targets destroyed! Opening the door...");
-            RotatingDoor.OpenDoor(); // trigger door when all are gone
-        }
-    }
+    
 }
