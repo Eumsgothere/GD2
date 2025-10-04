@@ -6,27 +6,46 @@ public class TargetWall : MonoBehaviour
     [SerializeField] private Color blueColor = Color.blue;
     [SerializeField] private Color redColor = Color.red;
     [SerializeField] private GameObject slidingWall; // assign in Inspector
+    [SerializeField] private float slideDistance = 5f;
+    [SerializeField] private float slideSpeed = 2f;
 
     private Color currentColor;
     private int correctHits = 0;
     private float timer = 0f;
-    private float changeInterval = 1f; // every second
+    private float changeInterval = 1f; // change color every second
+    private bool isOpening = false;
+    private Vector3 initialDoorPos;
+    private Vector3 targetDoorPos;
 
     private void Start()
     {
         if (wallRenderer == null)
             wallRenderer = GetComponent<Renderer>();
 
+        if (slidingWall != null)
+            initialDoorPos = slidingWall.transform.position;
+
         ChangeColor();
     }
 
     private void Update()
     {
+        // Randomly switch color every second
         timer += Time.deltaTime;
         if (timer >= changeInterval)
         {
             timer = 0f;
             ChangeColor();
+        }
+
+        // Smoothly slide door upward
+        if (isOpening && slidingWall != null)
+        {
+            slidingWall.transform.position = Vector3.MoveTowards(
+                slidingWall.transform.position,
+                targetDoorPos,
+                slideSpeed * Time.deltaTime
+            );
         }
     }
 
@@ -36,14 +55,20 @@ public class TargetWall : MonoBehaviour
         wallRenderer.material.color = currentColor;
     }
 
-    public void RegisterHit(string ballTag)
+    private void OnCollisionEnter(Collision collision)
     {
-        // Match check
+        // Detect ball collision
+        if (!collision.gameObject.CompareTag("RedBall") && !collision.gameObject.CompareTag("BlueBall"))
+            return;
+
+        string ballTag = collision.gameObject.tag;
+
+        // Check if the color matches
         if ((currentColor == blueColor && ballTag == "BlueBall") ||
             (currentColor == redColor && ballTag == "RedBall"))
         {
             correctHits++;
-            Debug.Log("Correct hit! Count = " + correctHits);
+            Debug.Log("✅ Correct hit! Count = " + correctHits);
 
             if (correctHits >= 3)
             {
@@ -52,17 +77,18 @@ public class TargetWall : MonoBehaviour
         }
         else
         {
-            Debug.Log("Wrong color hit!");
+            Debug.Log("❌ Wrong color hit!");
         }
+
+        Destroy(collision.gameObject); // optional: remove ball after hit
     }
 
     private void OpenSlidingWall()
     {
-        Debug.Log("Sliding wall opened!");
+        if (isOpening || slidingWall == null) return;
 
-        if (slidingWall != null)
-        {
-            slidingWall.transform.position += Vector3.up * 5f;
-        }
+        Debug.Log("🚪 Sliding wall opening...");
+        targetDoorPos = initialDoorPos + Vector3.up * slideDistance;
+        isOpening = true;
     }
 }
