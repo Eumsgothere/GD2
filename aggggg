@@ -1,0 +1,158 @@
+using UnityEngine;
+using UnityEngine.InputSystem;
+
+public class Player_script : MonoBehaviour
+{
+    public Transform respawnPoint; 
+    public float fallLimit = -10f;
+    [Header("Input Settings")]
+    [SerializeField] private InputActionAsset inputAction;
+
+    [Header("References")]
+    [SerializeField] private CharacterController characterController;
+    [SerializeField] private GameObject blueBallPrefab;
+    [SerializeField] private GameObject redBallPrefab;
+    [SerializeField] private Transform shootPoint;
+
+    [Header("Player Movement")]
+    [SerializeField] private float moveSpeed = 10f;
+    [SerializeField] private float jumpForce = 30f;
+    [SerializeField] private float gravity = -9.81f;
+    [SerializeField] private float shootForce = 20f;
+
+    private InputAction moveAction;
+    private InputAction lookAction;
+    private InputAction jumpAction;
+    private InputAction shootAction;
+    private InputAction switchBallAction;
+
+    private float verticalVelocity;
+    private Vector3 spawnPoint;
+
+    private enum BallType { Blue, Red }
+    private BallType currentBallType = BallType.Blue;
+
+    // Orbiting balls
+    private GameObject blueBallOrbit;
+    private GameObject redBallOrbit;
+    [SerializeField] private float orbitRadius = 1.5f;
+    [SerializeField] private float orbitSpeed = 80f;
+
+    private void Start()
+    {
+        var playerMap = inputAction.FindActionMap("Player");
+        moveAction = playerMap.FindAction("Move");
+        lookAction = playerMap.FindAction("Look");
+        jumpAction = playerMap.FindAction("Jump");
+        shootAction = playerMap.FindAction("Shoot");
+        switchBallAction = playerMap.FindAction("SwitchBall");
+
+        jumpAction.performed += Jump_performed;
+        shootAction.performed += Shoot_performed;
+        switchBallAction.performed += SwitchBall_performed;
+
+        characterController = GetComponent<CharacterController>();
+        spawnPoint = transform.position;
+
+        // Create orbiting balls
+        blueBallOrbit = Instantiate(blueBallPrefab, transform.position + Vector3.right * orbitRadius, Quaternion.identity);
+        redBallOrbit = Instantiate(redBallPrefab, transform.position + Vector3.left * orbitRadius, Quaternion.identity);
+
+        blueBallOrbit.GetComponent<Rigidbody>().isKinematic = true;
+        redBallOrbit.GetComponent<Rigidbody>().isKinematic = true;
+    }
+
+    private void OnEnable() => inputAction.FindActionMap("Player").Enable();
+    private void OnDisable() => inputAction.FindActionMap("Player").Disable();
+    void Respawn()
+    {
+        if (respawnPoint != null)
+        {
+            transform.position = respawnPoint.position;
+            transform.rotation = respawnPoint.rotation;
+
+            
+            Rigidbody rb = GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
+        }
+        else
+        {
+            Debug.LogWarning("No respawn point assigned to Player_script!");
+        }
+    }
+
+private void Jump_performed(InputAction.CallbackContext obj)
+    {
+        if (characterController.isGrounded)
+            verticalVelocity = jumpForce;
+    }
+
+    private void SwitchBall_performed(InputAction.CallbackContext obj)
+    {
+        currentBallType = (currentBallType == BallType.Blue) ? BallType.Red : BallType.Blue;
+        Debug.Log("Switched to " + currentBallType + " ball!");
+    }
+
+    private void Shoot_performed(InputAction.CallbackContext obj)
+    {
+        // Choose prefab (not orbiting ball)
+        GameObject prefabToShoot = (currentBallType == BallType.Blue) ? blueBallPrefab : redBallPrefab;
+
+        // Instantiate projectile
+        GameObject thrownBall = Instantiate(prefabToShoot, shootPoint.position, shootPoint.rotation);
+
+        // Make sure it has a BallScript
+        BallScript ballScript = thrownBall.GetComponent<BallScript>();
+        if (ballScript != null)
+        {
+            ballScript.Shoot(shootPoint.forward, shootForce);
+            Destroy(gameObject, 5);
+        }
+        else
+        {
+            Debug.Log("Thrown ball is missing BallScript!");
+        }
+
+        if (currentBallType == BallType.Blue)
+        {
+            if (blueBallOrbit != null) Destroy(blueBallOrbit);
+            blueBallOrbit = Instantiate(blueBallPrefab, transform.position + Vector3.right * orbitRadius, Quaternion.identity);
+            blueBallOrbit.GetComponent<Rigidbody>().isKinematic = true;
+        }
+        else
+        {
+            if (redBallOrbit != null) Destroy(redBallOrbit);
+            redBallOrbit = Instantiate(redBallPrefab, transform.position + Vector3.left * orbitRadius, Quaternion.identity);
+            redBallOrbit.GetComponent<Rigidbody>().isKinematic = true;
+        }
+    }
+
+
+    private void FixedUpdate()
+    {
+        // Move & Rotate player
+        Vector2 move = moveAction.ReadValue<Vector2>();
+        Vector3 moveDir = transform.TransformDirection(new Vector3(move.x, 0, move.y)) * moveSpeed;
+
+        if (characterController.isGrounded && verticalVelocity < 0)
+            verticalVelocity = -2f;
+
+        verticalVelocity += gravity * Time.fixedDeltaTime;
+        moveDir.y = verticalVelocity;
+
+        characterController.Move(moveDir * Time.fixedDeltaTime);
+
+        float rotation = lookAction.ReadValue<Vector2>().x;
+        transform.Rotate(0, rotation, 0);
+
+        // Make balls orbit
+        if (blueBallOrbit != null)
+            blueBallOrbit.transform.RotateAround(transform.position, Vector3.up, orbitSpeed * Time.fixedDeltaTime);
+        if (redBallOrbit != null)
+            redBallOrbit.transform.RotateAround(transform.position, Vector3.up, orbitSpeed * Time.fixedDeltaTime);
+    }
+}
