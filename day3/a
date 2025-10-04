@@ -2,31 +2,32 @@ using UnityEngine;
 
 public class BallScript : MonoBehaviour
 {
-    public Rigidbody ballRigid;
+    private Rigidbody rb;
+    [SerializeField] private float lifetime = 5f; // how long before the ball disappears
+
+    private void Awake()
+    {
+        // Automatically find Rigidbody component
+        rb = GetComponent<Rigidbody>();
+
+        if (rb == null)
+        {
+            Debug.LogError("No Rigidbody found on " + gameObject.name);
+        }
+    }
 
     public void Shoot(Vector3 direction, float force)
     {
-        ballRigid = GetComponent<Rigidbody>();
-        ballRigid.isKinematic = false;
-        ballRigid.AddRelativeForce(0, 0, 3000);
-    }
-
-    public void OnCollisionEnter(Collision collision)
-    {
-        if (collision.gameObject.CompareTag("TargetWall"))
+        if (rb == null)
         {
-
-            TargetWall wall = collision.gameObject.GetComponent<TargetWall>();
-            if (wall != null)
-            {
-                wall.RegisterHit(gameObject.tag);
-            }
-
-            Destroy(gameObject);
+            Debug.LogError("Cannot shoot — Rigidbody missing on " + gameObject.name);
+            return;
         }
-    }
-    void Update()
-    {
-        ballRigid.AddTorque(1, 1, 1);
+
+        rb.linearVelocity = Vector3.zero;
+        rb.AddForce(direction * force, ForceMode.VelocityChange);
+
+        // Destroy after a few seconds to clean up
+        Destroy(gameObject, lifetime);
     }
 }
