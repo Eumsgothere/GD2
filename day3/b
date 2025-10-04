@@ -1,56 +1,37 @@
 using UnityEngine;
 
-public class SphereRed : MonoBehaviour
+public class RotatingDoor : MonoBehaviour
 {
-    [SerializeField] private Renderer sphereRenderer;
-    [SerializeField] private Color redColor = Color.red;
-    [SerializeField] private Color blueColor = Color.blue;
+    private static RotatingDoor instance;
+    private bool isOpening = false;
+    private float openAngle = 90f;      // how far to open
+    private float rotationSpeed = 45f;  // degrees per second
+    private float rotated = 0f;
 
-    private Color currentColor;
-
-    // Static counts shared across all SphereRed objects
-    private static int totalTargets;
-    private static int destroyedTargets;
-
-    private void Start()
+    private void Awake()
     {
-        if (sphereRenderer == null)
-            sphereRenderer = GetComponent<Renderer>();
-
-        // Randomly choose red or blue
-        currentColor = (Random.value > 0.5f) ? blueColor : redColor;
-        sphereRenderer.material.color = currentColor;
-
-        // Count all targets in scene
-        totalTargets = FindObjectsOfType<SphereRed>().Length;
+        instance = this;
     }
 
-    private void OnCollisionEnter(Collision collision)
+    private void Update()
     {
-        // Only respond to red or blue balls
-        if (!collision.gameObject.CompareTag("RedBall") && !collision.gameObject.CompareTag("BlueBall"))
-            return;
-
-        bool isRedTarget = currentColor == redColor;
-        string ballTag = collision.gameObject.tag;
-
-        // Destroy only if color matches
-        if ((isRedTarget && ballTag == "RedBall") || (!isRedTarget && ballTag == "BlueBall"))
+        if (isOpening && rotated < openAngle)
         {
-            destroyedTargets++;
-            Destroy(gameObject);
-            Debug.Log($"Target destroyed! {destroyedTargets}/{totalTargets}");
+            float rotateAmount = rotationSpeed * Time.deltaTime;
+            transform.Rotate(Vector3.up, rotateAmount);
+            rotated += rotateAmount;
+        }
+    }
 
-            // Check if all targets are destroyed
-            if (destroyedTargets >= totalTargets)
-            {
-                Debug.Log("All targets destroyed! Opening door...");
-                RotatingDoor.OpenDoor();
-            }
+    public static void OpenDoor()
+    {
+        if (instance != null)
+        {
+            instance.isOpening = true;
         }
         else
         {
-            Debug.Log("Wrong color hit!");
+            Debug.LogWarning("⚠️ No RotatingDoor found in the scene!");
         }
     }
 }
