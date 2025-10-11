@@ -1,0 +1,119 @@
+using UnityEngine;
+
+public class GameMenuScript : MonoBehaviour
+{
+
+    bool cStart, cOption;
+    int Gender;
+    string[] GOptions;
+    string nameField;
+    string nnField;
+    float ageValue;
+
+    void Start()
+    {
+        cStart = false;
+        cOption = false;
+
+        Gender = 0;
+        GOptions = new string[] { "Female", "Male" };
+        nameField = "";
+        nnField = "";
+        ageValue = 0;
+
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        
+    }
+
+    private void OnGUI()
+    {
+        if(!cStart && !cOption)
+        {
+            //MAIN MENU BOX
+            GUI.Box(new Rect(Screen.width / 2 - 280, Screen.height / 2 - 90, 550, 100), "The Game Menu"); //WIDTH HIGH = LEFT; HEIGHT HIGH = UP
+
+            //FORMATTING OF THE 
+
+
+            if (GUI.Button(new Rect(Screen.width / 2 - 270, Screen.height / 2 - 50, 150, 40), "Start"))
+                cStart = true;
+
+            if (GUI.Button(new Rect(Screen.width / 2 - 80, Screen.height / 2 - 50, 150, 40), "Options"))
+                cOption = true;
+
+            GUI.Button(new Rect(560, Screen.height / 2 - 50, 150, 40), "Exit");
+
+        } else if (cOption)
+        {
+            GUI.Box(new Rect(Screen.width / 2 - 200, Screen.height / 2 - 200, 400, 350), "Options");
+
+            //GENDER raio==diobtton
+            GUI.Label(new Rect(300, 90, 200, 25), "Gender:");
+            //bool maleSelect = (Gender == 0);
+            //bool femaleSelect = (Gender == 1);
+            Gender = GUI.Toolbar(new Rect(400, 90, 200, 25), Gender, GOptions, "Toggle");
+
+            //if (GUI.Toggle(new Rect(400, 90, 200, 25), Gender == 0, "Male"))
+            //    Gender = 0;
+
+            //if (GUI.Toggle(new Rect(500, 90, 200, 25), Gender == 1, "Female"))
+            //    Gender = 1;
+
+            //maleSelect = GUI.Toggle(new Rect(400, 90, 200, 25), maleSelect, "Male");
+            //femaleSelect = GUI.Toggle(new Rect(500, 90, 200, 25), femaleSelect, "Female");
+            //Gender = GUI.Toolbar(new Rect(400, 90, 200, 25), Gender, GOptions);
+
+            //NAME FIELD
+            GUI.Label(new Rect(300, 150, 200, 25), "Name:");
+            nameField = GUI.TextField(new Rect(400, 150, 200, 25), nameField);
+
+            //NICKNAME FIELD
+            GUI.Label(new Rect(300, 210, 200, 25), "Nickname:");
+            nnField = GUI.TextField(new Rect(400, 210, 200, 25), nnField);
+
+            //AGEFIELD
+            GUI.Label(new Rect(300, 290, 200, 25), "Age:");
+            ageValue = GUI.HorizontalSlider(new Rect(400, 290, 200, 25), ageValue, 10, 65);
+            GUI.Label(new Rect(400, 300, 200, 25), ageValue.ToString("0"));
+
+            //OKAY BUTTON
+            if (GUI.Button(new Rect(350, 350, 200, 25), "OK"))
+            {
+                cOption = false;
+            }
+
+
+            //GUI.Label ()
+            //Box: Width = 400, H = 350 : Option
+            //Toggle/Radiobutton = Gender: Male or female
+            //Textfield = Name, TextField : NickName
+            //Horizontal Slider: Age - 10 to 65, Label : displays the age
+            //Button - Caption is OK goes back to the main menu
+        }
+        else if (cStart)
+        {
+            if (nameField == "")
+                cStart = false;
+            GUI.Box(new Rect(Screen.width / 2 - 160, Screen.height / 2 - 200, 300, 250), "Player Information");
+            GUI.Label(new Rect(350, 90, 200, 25), $"Gender:   {GOptions[Gender]}");
+            GUI.Label(new Rect(350, 120, 200, 25), $"Name:   {nameField}");
+            GUI.Label(new Rect(350, 150, 200, 25), $"Nickname:   {nnField}");
+            GUI.Label(new Rect(350, 180, 200, 25), $"Age:   {ageValue:0}");
+            //Box: Information
+            //Display Gender Name, Nickname Age in verical order
+
+            if (GUI.Button(new Rect(350, 250, 200, 25), "Back"))
+            {
+                cStart = false;
+            }
+        }
+
+        //Box: Width -350, Height -150 main menu
+        //3 Buttons (Start, Option, Exit - Horizontal Arangement) if on eis clicked it should hide
+
+
+    }
