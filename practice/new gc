@@ -1,11 +1,24 @@
-if (isReset)
+void Update()
 {
-    targetCount = 2;
-    targetLife = 2;
-    index = 0;          // <- important: reset the toolbar selection
-    playerName = "";
-    red = green = blue = 255;
-    showNameInput = false;
-    showNameRequired = false;
-    isReset = false;
+    // Update color every frame
+    targetColor = new Color(red / 255f, green / 255f, blue / 255f);
+
+    // Update all targets' colors immediately
+    foreach (GameObject t in targets)
+    {
+        if (t != null)
+        {
+            Target tgt = t.GetComponent<Target>();
+            if (tgt != null)
+                tgt.SetTargetColor(targetColor);
+        }
+    }
+
+    // Check if number of targets changed, adjust immediately
+    int newTargetCount = (int)targetCount;
+    if (newTargetCount != targets.Count)
+    {
+        ClearTargets();
+        SpawnTargets(newTargetCount);
+    }
 }
