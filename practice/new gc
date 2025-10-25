@@ -1,19 +1,80 @@
-void SpawnTargets(int count)
+private void OnGUI()
 {
-    Debug.Log($"Spawning {count} targets...");
-    for (int i = 0; i < count && i < targetLoc.Length; i++)
-    {
-        GameObject pos = targetLoc[i];
-        GameObject targetObj = Instantiate(targetPrefab, pos.transform.position, pos.transform.rotation);
-        targets.Add(targetObj);
+    float ScreenWidthHalf = Screen.width / 2f;
+    float ScreenHeightHalf = Screen.height / 2f;
 
-        Target targetSc = targetObj.GetComponent<Target>();
-        if (targetSc != null)
+    // If menu not yet confirmed
+    if (!isConfirmed && !IsOk)
+    {
+        GUI.Box(new Rect(ScreenWidthHalf - 200, ScreenHeightHalf - 150, 400, 300), "Game Menu");
+
+        // --- Target Hits ---
+        GUI.Label(new Rect(ScreenWidthHalf - 150, ScreenHeightHalf - 120, 200, 30), $"Target Hits: {targetLife}");
+        if (GUI.Button(new Rect(ScreenWidthHalf + 50, ScreenHeightHalf - 120, 40, 25), "2")) targetLife = 2;
+        if (GUI.Button(new Rect(ScreenWidthHalf + 100, ScreenHeightHalf - 120, 40, 25), "3")) targetLife = 3;
+        if (GUI.Button(new Rect(ScreenWidthHalf + 150, ScreenHeightHalf - 120, 40, 25), "4")) targetLife = 4;
+
+        // --- Number of Targets ---
+        GUI.Label(new Rect(ScreenWidthHalf - 150, ScreenHeightHalf - 80, 200, 30), $"Number of Targets: {targetCount}");
+        targetCount = GUI.HorizontalSlider(new Rect(ScreenWidthHalf - 50, ScreenHeightHalf - 60, 200, 30), targetCount, 2, 6);
+        targetCount = Mathf.Round(targetCount / 2) * 2; // snap to 2, 4, or 6
+
+        // --- RGB Sliders ---
+        GUI.Label(new Rect(ScreenWidthHalf - 150, ScreenHeightHalf - 20, 200, 30), "Target Color (RGB)");
+        GUI.Label(new Rect(ScreenWidthHalf - 100, ScreenHeightHalf, 50, 30), $"R:{red}");
+        GUI.Label(new Rect(ScreenWidthHalf - 40, ScreenHeightHalf, 50, 30), $"G:{green}");
+        GUI.Label(new Rect(ScreenWidthHalf + 20, ScreenHeightHalf, 50, 30), $"B:{blue}");
+
+        red = GUI.VerticalSlider(new Rect(ScreenWidthHalf - 90, ScreenHeightHalf + 30, 20, 80), red, 255, 0);
+        green = GUI.VerticalSlider(new Rect(ScreenWidthHalf - 30, ScreenHeightHalf + 30, 20, 80), green, 255, 0);
+        blue = GUI.VerticalSlider(new Rect(ScreenWidthHalf + 30, ScreenHeightHalf + 30, 20, 80), blue, 255, 0);
+        red = Mathf.Round(red);
+        green = Mathf.Round(green);
+        blue = Mathf.Round(blue);
+
+        // --- Buttons ---
+        if (GUI.Button(new Rect(ScreenWidthHalf - 140, ScreenHeightHalf + 130, 100, 30), "Reset"))
         {
-            targetSc.SetLife((int)targetLife);
-            targetSc.SetTargetColor(targetColor);  // ← Apply color here
+            ResetMenuSettings();
+        }
+
+        if (GUI.Button(new Rect(ScreenWidthHalf + 40, ScreenHeightHalf + 130, 100, 30), "Set"))
+        {
+            isConfirmed = true; // go to player name input
         }
     }
-    targetsSpawned = true;
-    Debug.Log($"Targets spawned: {targets.Count}");
+
+    // --- Player Name Input Screen ---
+    if (isConfirmed && !IsOk)
+    {
+        GUI.Box(new Rect(ScreenWidthHalf - 150, ScreenHeightHalf - 100, 300, 200), "Player Setup");
+        GUI.Label(new Rect(ScreenWidthHalf - 130, ScreenHeightHalf - 60, 200, 30), "Enter Player Name:");
+        playerName = GUI.TextField(new Rect(ScreenWidthHalf - 130, ScreenHeightHalf - 30, 200, 30), playerName);
+
+        if (GUI.Button(new Rect(ScreenWidthHalf - 100, ScreenHeightHalf + 20, 80, 30), "OK"))
+        {
+            if (!string.IsNullOrEmpty(playerName))
+            {
+                IsOk = true;
+                ApplySettings();
+            }
+        }
+
+        if (GUI.Button(new Rect(ScreenWidthHalf + 20, ScreenHeightHalf + 20, 80, 30), "Back"))
+        {
+            isConfirmed = false;
+        }
+    }
+
+    // --- Game Display After Setup ---
+    if (IsOk)
+    {
+        GUI.Label(new Rect(50, 20, 200, 30), playerName);
+        ammoCount = $"Ammo: {player.GetAmmo()}";
+        GUI.Label(new Rect(50, 50, 200, 30), ammoCount);
+    }
+
+    // --- Win Screen ---
+    if (finalPlatformReached)
+        GUI.Label(new Rect(ScreenWidthHalf - 100, ScreenHeightHalf, 600, 80), "You Win! Let's Go!");
 }
