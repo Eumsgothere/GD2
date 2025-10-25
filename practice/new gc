@@ -1,7 +1,7 @@
 private void OnGUI()
 {
     // MAIN MENU
-    if (!isConfirmed && !IsOk && !showNameInput)
+    if (!IsOk && !showNameInput)
     {
         GUI.Box(
             new Rect(ScreenWidthHalf / 2, ScreenHeightHalf / 2 - 30, ScreenWidthHalf, ScreenHeightHalf + 60),
@@ -15,7 +15,7 @@ private void OnGUI()
             targetCount, 2, 6);
         targetCount = Mathf.Round(targetCount / 2) * 2;
 
-        // target hit
+        // target hits
         GUI.Label(new Rect(ScreenWidthHalf / 2 + 20, ScreenHeightHalf / 2 + 8, 200, 30), $"Target Hits: {targetLife}");
         string[] hitOptions = { "Two", "Three", "Four" };
         index = GUI.Toolbar(new Rect(ScreenWidthHalf + 50, ScreenHeightHalf / 2 + 8, 150, 25), index, hitOptions);
@@ -34,16 +34,16 @@ private void OnGUI()
         green = Mathf.Round(green);
         blue = Mathf.Round(blue);
 
-        // buttons
+        // Buttons
         if (GUI.Button(new Rect(ScreenWidthHalf / 2 + 380, ScreenHeightHalf / 2 + 220, 100, 30), "Set"))
-            showNameInput = true; // ← go to next screen
+            showNameInput = true;
 
         if (GUI.Button(new Rect(ScreenWidthHalf / 2 + 380, ScreenHeightHalf / 2 + 165, 100, 30), "Reset"))
             isReset = true;
     }
 
     // NAME INPUT SCREEN
-    if (showNameInput && !isConfirmed)
+    if (showNameInput && !IsOk)
     {
         GUI.Box(new Rect(ScreenWidthHalf / 2, ScreenHeightHalf / 2 - 30, ScreenWidthHalf, ScreenHeightHalf + 60), "Enter Player Info");
 
@@ -51,51 +51,39 @@ private void OnGUI()
         playerName = GUI.TextField(new Rect(ScreenWidthHalf / 2 + 120, ScreenHeightHalf / 2 + 72, 200, 30), playerName);
 
         if (GUI.Button(new Rect(ScreenWidthHalf / 2 + 280, ScreenHeightHalf / 2 + 120, 100, 30), "Start"))
-            isConfirmed = true;
+        {
+            // Start game immediately
+            showNameInput = false;
+            IsOk = true;
+            targetColor = new Color(red / 255f, green / 255f, blue / 255f);
+
+            if (!targetsSpawned)
+                SpawnTargets((int)targetCount);
+        }
 
         if (GUI.Button(new Rect(ScreenWidthHalf / 2 + 380, ScreenHeightHalf / 2 + 165, 100, 30), "Back"))
             showNameInput = false;
     }
 
-    // CONFIRMATION SCREEN
-    if (isConfirmed && !string.IsNullOrEmpty(playerName) && !IsOk)
-    {
-        GUI.Box(new Rect(ScreenWidthHalf / 2, ScreenHeightHalf / 2 - 30, ScreenWidthHalf, ScreenHeightHalf + 30), "Confirm Details");
-        GUI.Label(new Rect(ScreenWidthHalf / 2 + 20, ScreenHeightHalf / 2 + 8, 300, 30), $"Player Name: {playerName}");
-        GUI.Label(new Rect(ScreenWidthHalf / 2 + 20, ScreenHeightHalf / 2 + 40, 300, 30), $"Target Count: {targetCount}");
-        GUI.Label(new Rect(ScreenWidthHalf / 2 + 20, ScreenHeightHalf / 2 + 72, 300, 30), $"Target Life: {targetLife}");
-
-        if (GUI.Button(new Rect(ScreenWidthHalf / 2 + 65, ScreenHeightHalf / 2 + 140, 100, 30), "OK"))
-            IsOk = true;
-
-        if (GUI.Button(new Rect(ScreenWidthHalf / 2 + 220, ScreenHeightHalf / 2 + 140, 100, 30), "Back"))
-        {
-            isConfirmed = false;
-            showNameInput = true; // go back to name input screen
-        }
-    }
-
-    // Reset logic (same)
+    // RESET LOGIC
     if (isReset)
     {
         targetCount = 2;
         targetLife = 2;
         playerName = "";
+        red = green = blue = 255;
         isReset = false;
     }
 
-    // OK Screen (same)
+    // GAME HUD (after pressing Start)
     if (IsOk)
     {
-        targetColor = new Color(red / 255f, green / 255f, blue / 255f);
-        if (!targetsSpawned)
-            SpawnTargets((int)targetCount);
-
         GUI.Label(new Rect(50, 20, 200, 30), playerName);
         ammoCount = $"Ammo: {player.GetAmmo()}";
         GUI.Label(new Rect(50, 50, 200, 30), ammoCount);
     }
 
+    // WIN MESSAGE
     if (finalPlatformReached)
-        GUI.Label(new Rect(ScreenWidthHalf, ScreenHeightHalf, 600, 80), "You Win Lets!");
+        GUI.Label(new Rect(ScreenWidthHalf, ScreenHeightHalf, 600, 80), "You Win! Let's go!");
 }
