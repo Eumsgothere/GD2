@@ -1,227 +1,37 @@
 using UnityEngine;
-using System.Collections.Generic;
 
-public class GameController : MonoBehaviour
+public class CameraSwitcher : MonoBehaviour
 {
-    float ScreenWidthHalf = Screen.width / 2;
-    float ScreenHeightHalf = Screen.height / 2;
+    public Transform topViewPos;         // Assign TopViewCamPos in Inspector
+    public Transform thirdPersonPos;     // Assign ThirdPersonCamPos in Inspector
+    public Transform player;             // Assign your Player in Inspector
+    public float transitionSpeed = 2f;
 
-    float targetCount = 2;
-    float targetLife = 2;
-    string playerName = "";
-
-    float red = 255, green = 255, blue = 255;
-    Color targetColor = Color.white;
-
-    int index = 0;
-    bool showNameInput = false;
-    bool showNameRequired = false;
-    bool isReset = false;
-    bool isOk = false;
-
-    bool targetsSpawned = false;
-    bool finalPlatformReached = false;
-    bool allTargetsDestroyed = false;
-
-    List<GameObject> targets = new List<GameObject>();
-
-    [SerializeField] Player player;
-    [SerializeField] Target target;
-    [SerializeField] GameObject targetPrefab;
-    GameObject[] targetLoc;
-    private string ammoCount;
-
-    public bool IsOk { get => isOk; set => isOk = value; }
+    private bool isThirdPerson = false;
 
     void Start()
     {
-        targetLoc = GameObject.FindGameObjectsWithTag("LocationTarget");
-        ammoCount = $"Ammo: {player.GetAmmo()}";
-    }
-
-    private void OnGUI()
-    {
-        // --- MENU --- //
-        if (!IsOk && !showNameInput)
+        // Start from top view
+        if (topViewPos)
         {
-            GUI.Box(
-                new Rect(ScreenWidthHalf / 2, ScreenHeightHalf / 2 - 30, ScreenWidthHalf, ScreenHeightHalf + 60),
-                "Game Menu"
-            );
-
-            // Number of Targets (live update)
-            GUI.Label(new Rect(ScreenWidthHalf / 2 + 20, ScreenHeightHalf - 120, 500, 60),
-                $"Number of Targets: {targetCount}");
-            targetCount = GUI.HorizontalSlider(new Rect(ScreenWidthHalf / 2 + 120, ScreenHeightHalf - 95 + 10, 400, 30),
-                targetCount, 2, 6);
-            targetCount = Mathf.Round(targetCount / 2) * 2;
-
-            // Target Hits toggle
-            GUI.Label(new Rect(ScreenWidthHalf / 2 + 20, ScreenHeightHalf / 2 + 8, 200, 30),
-                $"Target Hits: {targetLife}");
-            string[] hitOptions = { "Two", "Three", "Four" };
-            index = GUI.Toolbar(new Rect(ScreenWidthHalf + 50, ScreenHeightHalf / 2 + 8, 150, 25), index, hitOptions);
-            targetLife = new int[] { 2, 3, 4 }[index];
-
-            // Target Color
-            GUI.Label(new Rect(ScreenWidthHalf / 2 + 20, ScreenHeightHalf / 2 + 104, 300, 50), "Target Color [RGB]");
-            GUI.Label(new Rect(ScreenWidthHalf / 2 + 110, ScreenHeightHalf / 2 + 325, 50, 530), $"R:{red}");
-            GUI.Label(new Rect(ScreenWidthHalf / 2 + 170, ScreenHeightHalf / 2 + 325, 50, 530), $"G:{green}");
-            GUI.Label(new Rect(ScreenWidthHalf / 2 + 230, ScreenHeightHalf / 2 + 325, 50, 530), $"B:{blue}");
-
-            red = GUI.VerticalSlider(new Rect(ScreenWidthHalf / 2 + 120, ScreenHeightHalf / 2 + 130, 20, 190), red, 255, 0);
-            green = GUI.VerticalSlider(new Rect(ScreenWidthHalf / 2 + 180, ScreenHeightHalf / 2 + 130, 20, 190), green, 255, 0);
-            blue = GUI.VerticalSlider(new Rect(ScreenWidthHalf / 2 + 240, ScreenHeightHalf / 2 + 130, 20, 190), blue, 255, 0);
-            red = Mathf.Round(red);
-            green = Mathf.Round(green);
-            blue = Mathf.Round(blue);
-
-            // Set and Reset buttons
-            if (GUI.Button(new Rect(ScreenWidthHalf / 2 + 380, ScreenHeightHalf / 2 + 220, 100, 30), "Set"))
-                showNameInput = true;
-
-            if (GUI.Button(new Rect(ScreenWidthHalf / 2 + 380, ScreenHeightHalf / 2 + 165, 100, 30), "Reset"))
-                isReset = true;
-        }
-
-        // --- NAME INPUT --- //
-        if (showNameInput && !IsOk)
-        {
-            GUI.Box(new Rect(ScreenWidthHalf / 2 + 220, ScreenHeightHalf / 2, ScreenWidthHalf - 400, ScreenHeightHalf - 200), "Enter Player Info");
-            GUI.Label(new Rect(ScreenWidthHalf / 2 + 240, ScreenHeightHalf / 2 + 10, 200, 30), "Enter your name:");
-            playerName = GUI.TextField(new Rect(ScreenWidthHalf / 2 + 245, ScreenHeightHalf / 2 + 40, 130, 25), playerName);
-
-            if (GUI.Button(new Rect(ScreenWidthHalf / 2 + 260, ScreenHeightHalf / 2 + 80, 100, 30), "Start"))
-            {
-                // Require a non-empty name
-                if (!string.IsNullOrEmpty(playerName.Trim()))
-                {
-                    showNameInput = false;
-                    IsOk = true;
-                    targetColor = new Color(red / 255f, green / 255f, blue / 255f);
-
-                    if (!targetsSpawned)
-                        SpawnTargets((int)targetCount);
-                }
-                else
-                {
-                    showNameRequired = true;
-                }
-            }
-
-            if (showNameRequired)
-                GUI.Label(new Rect(ScreenWidthHalf / 2 + 230, ScreenHeightHalf / 2 + 115, 200, 30), "Name required!", GUI.skin.label);
-        }
-
-        // --- RESET --- //
-        if (isReset)
-        {
-            targetCount = 2;
-            targetLife = 2;
-            index = 0;
-            playerName = "";
-            red = green = blue = 255;
-            showNameInput = false;
-            showNameRequired = false;
-            isReset = false;
-
-            ClearTargets();
-            targetColor = Color.white;
-            SpawnTargets((int)targetCount);
-        }
-
-        // --- GAME HUD --- //
-        if (IsOk)
-        {
-            GUI.Label(new Rect(50, 20, 200, 30), $"Player: {playerName}");
-            ammoCount = $"Ammo: {player.GetAmmo()}";
-            GUI.Label(new Rect(50, 50, 200, 30), ammoCount);
-        }
-
-        // --- WIN MESSAGE --- //
-        if (finalPlatformReached)
-            GUI.Label(new Rect(ScreenWidthHalf, ScreenHeightHalf, 600, 80), "You Win! Let's go!");
-    }
-
-    // --- SPAWN TARGETS --- //
-    void SpawnTargets(int count)
-    {
-        Debug.Log($"Spawning {count} targets...");
-        for (int i = 0; i < count && i < targetLoc.Length; i++)
-        {
-            GameObject pos = targetLoc[i];
-            GameObject targetObj = Instantiate(targetPrefab, pos.transform.position, pos.transform.rotation);
-            targets.Add(targetObj);
-
-            Target targetSc = targetObj.GetComponent<Target>();
-            if (targetSc != null)
-            {
-                targetSc.SetLife((int)targetLife);
-                targetSc.SetTargetColor(targetColor);
-            }
-        }
-        targetsSpawned = true;
-        Debug.Log($"Targets spawned: {targets.Count}");
-    }
-
-    void ClearTargets()
-    {
-        foreach (var t in targets)
-        {
-            if (t != null)
-                Destroy(t);
-        }
-        targets.Clear();
-        targetsSpawned = false;
-    }
-
-    public void RemoveFromList(GameObject removeItem)
-    {
-        targets.Remove(removeItem);
-    }
-
-    void Update()
-    {
-        // Update target color and count live
-        targetColor = new Color(red / 255f, green / 255f, blue / 255f);
-
-        foreach (GameObject t in targets)
-        {
-            if (t != null)
-            {
-                Target tgt = t.GetComponent<Target>();
-                if (tgt != null)
-                    tgt.SetTargetColor(targetColor);
-            }
-        }
-
-        int newTargetCount = (int)targetCount;
-        if (newTargetCount != targets.Count)
-        {
-            ClearTargets();
-            SpawnTargets(newTargetCount);
-        }
-
-        if (targetsSpawned)
-        {
-            if (targets.Count == 0)
-                allTargetsDestroyed = true;
-            if (allTargetsDestroyed)
-                MakePlayerClimb();
+            transform.position = topViewPos.position;
+            transform.rotation = topViewPos.rotation;
         }
     }
 
-    public void FinalPlatformReached()
+    void LateUpdate()
     {
-        finalPlatformReached = true;
+        if (isThirdPerson && thirdPersonPos && player)
+        {
+            // Smoothly follow third person
+            Vector3 targetPos = player.position + (thirdPersonPos.position - thirdPersonPos.parent.position);
+            transform.position = Vector3.Lerp(transform.position, targetPos, transitionSpeed * Time.deltaTime);
+            transform.rotation = Quaternion.Lerp(transform.rotation, thirdPersonPos.rotation, transitionSpeed * Time.deltaTime);
+        }
     }
 
-    void MakePlayerClimb()
+    public void SwitchToThirdPerson()
     {
-        if (player != null)
-        {
-            CharacterController charController = player.GetComponent<CharacterController>();
-            charController.stepOffset = 0.5f;
-        }
+        isThirdPerson = true;
     }
 }
