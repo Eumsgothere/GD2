@@ -1,22 +1,3 @@
-GUI.Label(new Rect(ScreenWidthHalf - 150, ScreenHeightHalf - 120, 200, 30), $"Target Hits: {targetLife}");
 
-// Button 2
-if (GUI.Button(new Rect(ScreenWidthHalf + 50, ScreenHeightHalf - 120, 40, 25), 
-    targetLife == 2 ? "[2]" : "2"))
-{
-    targetLife = 2;
-}
-
-// Button 3
-if (GUI.Button(new Rect(ScreenWidthHalf + 100, ScreenHeightHalf - 120, 40, 25), 
-    targetLife == 3 ? "[3]" : "3"))
-{
-    targetLife = 3;
-}
-
-// Button 4
-if (GUI.Button(new Rect(ScreenWidthHalf + 150, ScreenHeightHalf - 120, 40, 25), 
-    targetLife == 4 ? "[4]" : "4"))
-{
-    targetLife = 4;
-}
+            GUI.Label(new Rect(ScreenWidthHalf - 150, ScreenHeightHalf - 120, 200, 30), $"Target Hits: {targetLife}");
+            index = GUI.Toolbar(new Rect(ScreenWidthHalf + 50, ScreenHeightHalf - 120, 40, 25), index, new string("Two", "Three", "Four"), "Toggle");
