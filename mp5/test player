@@ -1,0 +1,201 @@
+using UnityEngine;
+using UnityEngine.InputSystem;
+
+public class PlayerSc : MonoBehaviour
+{
+    [Header("Components")]
+    [SerializeField] private CharacterController charController;
+    [SerializeField] private InputActionAsset inputAction;
+    [SerializeField] private Animator animator;
+
+    [Header("Movement Settings")]
+    [SerializeField] private float walkSpeed = 5f;
+    [SerializeField] private float sprintSpeed = 8f;
+    [SerializeField] private float jumpHeight = 2f;
+    [SerializeField] private float gravity = 9.8f;
+    [SerializeField] private Transform respawnPoint;
+
+    private InputAction move, look, sprint, jump, melee, dodge;
+    private Vector2 moveInput, lookInput;
+    private Vector3 velocity;
+    private bool isSprinting;
+    private bool hasWon = false;
+    private bool isJumping = false;
+    private bool isDodging = false;
+    private bool isDead = false;
+
+    [Header("Combat")]
+    public Collider handHitbox;
+
+    [Header("Ability Unlocks")]
+    public bool canAttack = false;
+    public bool canJumpDodge = false;
+
+    public int lives = 5;
+
+    private bool isGrounded => charController.isGrounded;
+
+    private void OnEnable()
+    {
+        var map = inputAction.FindActionMap("Player");
+        map.Enable();
+
+        move = map.FindAction("Move");
+        look = map.FindAction("Look");
+        sprint = map.FindAction("Sprint");
+        jump = map.FindAction("Jump");
+        melee = map.FindAction("Meele");
+        dodge = map.FindAction("Dodge");
+
+        sprint.performed += ctx => { if (!hasWon) isSprinting = true; };
+        sprint.canceled += ctx => { if (!hasWon) isSprinting = false; };
+
+        jump.performed += JumpInput;
+        melee.performed += MeleeAttack;
+        dodge.performed += DodgeInput;
+    }
+
+    private void Update()
+    {
+        if (hasWon || isDead) return;
+
+        HandleMovement();
+        HandleRotation();
+
+        if (transform.position.y < -10f)
+            Respawn();
+    }
+
+    private void HandleMovement()
+    {
+        moveInput = move.ReadValue<Vector2>();
+        float currentSpeed = isSprinting ? sprintSpeed : walkSpeed;
+
+        if (isDodging) return;
+
+        Vector3 moveDir = transform.TransformDirection(new Vector3(moveInput.x, 0, moveInput.y)) * currentSpeed;
+
+        if (isGrounded && velocity.y <= 0)
+        {
+            velocity.y = -1f;
+            animator.SetBool("Fall", false);
+            isJumping = false;
+        }
+        else
+        {
+            velocity.y -= gravity * Time.deltaTime;
+            if (velocity.y < -0.1f)
+                animator.SetBool("Fall", true);
+        }
+
+        charController.Move((moveDir + velocity) * Time.deltaTime);
+
+        float forward = moveInput.y;
+        animator.SetFloat("Walk", Mathf.Abs(moveInput.y));
+        animator.SetBool("Run", isSprinting && forward > 0.1f);
+    }
+
+    private void JumpInput(InputAction.CallbackContext context)
+    {
+        if (!canJumpDodge) return;
+        if (hasWon || isJumping || !isGrounded || isDead) return;
+
+        isJumping = true;
+        velocity.y = Mathf.Sqrt(jumpHeight * 2f * gravity);
+
+        animator.SetTrigger("Jump");
+        animator.SetBool("Fall", false);
+    }
+
+    private void DodgeInput(InputAction.CallbackContext ctx)
+    {
+        if (!canJumpDodge || !isGrounded || isDodging || hasWon || isDead) return;
+
+        isDodging = true;
+        animator.SetTrigger("Dodge");
+
+        Vector3 dodgeDir = transform.forward * 7f;
+        StartCoroutine(DodgeRoutine(dodgeDir));
+    }
+
+    private System.Collections.IEnumerator DodgeRoutine(Vector3 dir)
+    {
+        float t = 0.25f;
+        while (t > 0)
+        {
+            charController.Move(dir * Time.deltaTime);
+            t -= Time.deltaTime;
+            yield return null;
+        }
+        isDodging = false;
+    }
+
+    private void MeleeAttack(InputAction.CallbackContext context)
+    {
+        if (!canAttack) return;
+        if (hasWon || isJumping || isDodging || isDead) return;
+
+        animator.SetTrigger("Meele");
+    }
+
+    private void HandleRotation()
+    {
+        lookInput = look.ReadValue<Vector2>();
+        transform.Rotate(0f, lookInput.x, 0f);
+    }
+
+    private void Respawn()
+    {
+        velocity = Vector3.zero;
+        charController.enabled = false;
+        transform.position = respawnPoint.position;
+        charController.enabled = true;
+    }
+
+    public void Hit(Vector3 knockbackDir)
+    {
+        if (isDead || hasWon) return;
+
+        animator.SetTrigger("Hit");
+        StartCoroutine(KnockbackRoutine(knockbackDir));
+    }
+
+    private System.Collections.IEnumerator KnockbackRoutine(Vector3 dir)
+    {
+        float duration = 0.25f;
+        while (duration > 0)
+        {
+            charController.Move(dir * Time.deltaTime);
+            duration -= Time.deltaTime;
+            yield return null;
+        }
+    }
+
+    public void TakeDamage(int amount)
+    {
+        lives -= amount;
+
+        if (lives <= 0)
+            Die();
+    }
+
+    public void Die()
+    {
+        if (isDead) return;
+        isDead = true;
+
+        animator.SetTrigger("Death");
+        charController.enabled = false;
+    }
+
+    public void Win()
+    {
+        hasWon = true;
+
+        animator.ResetTrigger("Jump");
+        animator.ResetTrigger("Meele");
+        animator.SetTrigger("Win");
+
+        charController.enabled = false;
+    }
+}
