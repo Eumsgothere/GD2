@@ -7,7 +7,33 @@ public class RedSphere : MonoBehaviour
         if (other.CompareTag("Body"))
         {
             Destroy(gameObject);
+            GameManager.Instance.RedSphereDestroyed();
         }
     }
 }
 
+using UnityEngine;
+
+public class GameManager : MonoBehaviour
+{
+    public static GameManager Instance;
+
+    public int totalRedSpheres;
+    private int destroyedRedSpheres = 0;
+    public PlayerSc player; // assign your player in inspector
+
+    private void Awake()
+    {
+        Instance = this;
+    }
+
+    public void RedSphereDestroyed()
+    {
+        destroyedRedSpheres++;
+
+        if (destroyedRedSpheres >= totalRedSpheres)
+        {
+            player.EnableAttack();
+        }
+    }
+}
