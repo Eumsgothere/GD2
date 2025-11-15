@@ -1,12 +1,40 @@
+public void EnableWeapon()
+{
+    handHitbox.enabled = true;
+}
+
+public void DisableWeapon()
+{
+    handHitbox.enabled = false;
+}
+
 using UnityEngine;
 
-public class RedSphere : MonoBehaviour
+public class GameManager : MonoBehaviour
 {
-    private void OnTriggerEnter(Collider other)
+    public static GameManager Instance;
+
+    public int totalCubes;
+    private int destroyedCubes = 0;
+    public PlayerSc player;
+
+    private void Awake()
     {
-        if (other.CompareTag("Player")) // just use the player tag for simplicity
+        Instance = this;
+    }
+
+    public void CubeDestroyed()
+    {
+        destroyedCubes++;
+        if (destroyedCubes >= totalCubes)
         {
-            Destroy(gameObject);
+            player.EnableJumpAndDodge();
         }
     }
+}
+public void EnableJumpAndDodge()
+{
+    canJump = true; // you already handle jump logic
+    canDodge = true; // add dodge logic if needed
+    // Optional: show UI cue or animation feedback
 }
