@@ -1,0 +1,73 @@
+// ===== UI SYSTEM =====
+private string playerName = "";
+private bool gameStarted = false;
+private int playerLife = 5;
+private float gameTimer = 0f;
+private bool gameOver = false;
+
+
+
+
+
+if (gameStarted && !gameOver && !hasWon)
+{
+    gameTimer += Time.deltaTime;
+}
+
+
+private void OnGUI()
+{
+    GUIStyle title = new GUIStyle(GUI.skin.label);
+    title.fontSize = 28;
+    title.fontStyle = FontStyle.Bold;
+    title.normal.textColor = Color.white;
+
+    GUIStyle label = new GUIStyle(GUI.skin.label);
+    label.fontSize = 18;
+    label.normal.textColor = Color.white;
+
+    // ================= START MENU =================
+    if (!gameStarted && !gameOver && !hasWon)
+    {
+        GUI.Box(new Rect(Screen.width/2 - 150, Screen.height/2 - 120, 300, 220), "Enter Player Name");
+
+        GUI.Label(new Rect(Screen.width/2 - 120, Screen.height/2 - 70, 250, 30), "Player Name:", label);
+        playerName = GUI.TextField(new Rect(Screen.width/2 - 120, Screen.height/2 - 40, 240, 30), playerName);
+
+        if (GUI.Button(new Rect(Screen.width/2 - 60, Screen.height/2 + 20, 120, 40), "START"))
+        {
+            if (playerName.Trim() != "")
+            {
+                gameStarted = true;
+            }
+        }
+
+        return;
+    }
+
+    // ================== GAME UI (life + timer) ==================
+    if (gameStarted && !hasWon && !gameOver)
+    {
+        GUI.Label(new Rect(20, 20, 200, 40), $"Life: {playerLife}", label);
+        GUI.Label(new Rect(20, 50, 300, 40), $"Time: {gameTimer:F2}", label);
+    }
+
+    // ================== YOU WIN ==================
+    if (hasWon)
+    {
+        GUI.Box(new Rect(Screen.width/2 - 180, Screen.height/2 - 120, 360, 200), "");
+        GUI.Label(new Rect(Screen.width/2 - 150, Screen.height/2 - 80, 350, 40),
+            $"Congratulations, {playerName}!", title);
+
+        GUI.Label(new Rect(Screen.width/2 - 150, Screen.height/2 - 30, 350, 40),
+            $"Your Time: {gameTimer:F2} seconds", label);
+    }
+
+    // ================== YOU LOSE ==================
+    if (gameOver)
+    {
+        GUI.Box(new Rect(Screen.width/2 - 150, Screen.height/2 - 80, 300, 160), "");
+        GUI.Label(new Rect(Screen.width/2 - 120, Screen.height/2 - 40, 300, 40),
+            "YOU LOSE!", title);
+    }
+}
