@@ -1,11 +1,32 @@
-private void DodgeInput(InputAction.CallbackContext context)
-{
-    if (!gameStarted || !canMove || !canDodge) return;
-    if (hasWon || isJumping) return;
+using UnityEngine;
 
+public class Trap : MonoBehaviour
+{
+    public Transform nearestFloor; // assign the nearest floor or respawn point in Inspector
+    public int damage = 1; // optional damage
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("Player"))
+        {
+            PlayerSc player = other.GetComponent<PlayerSc>();
+            if (player != null)
+            {
+                // Apply knockback effect
+                player.TakeDamage(damage);
+
+                // Move player to nearest floor
+                player.transform.position = nearestFloor.position;
+
+                // Play Hit/Knockback animation
+                player.PlayHitAnimation(); // create this method in PlayerSc
+            }
+        }
+    }
+}
+public void PlayHitAnimation()
+{
     animator.ResetTrigger("Jump");
     animator.ResetTrigger("Meele");
-    animator.SetTrigger("Dodge");
+    animator.SetTrigger("Hit"); // make sure "Hit" trigger exists in Animator
 }
-dodge = map.FindAction("Dodge");
-dodge.performed += DodgeInput;
