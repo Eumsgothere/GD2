@@ -1,9 +1,11 @@
 private void DodgeInput(InputAction.CallbackContext context)
-    {
-        if (!gameStarted || !canMove || !canDodge return;
-        if (hasWon || isJumping) return;
+{
+    if (!gameStarted || !canMove || !canDodge) return;
+    if (hasWon || isJumping) return;
 
-        animator.ResetTrigger("Jump");
-        animator.ResetTrigger("Meele");
-        animator.SetTrigger("Dodge");
-    }
+    animator.ResetTrigger("Jump");
+    animator.ResetTrigger("Meele");
+    animator.SetTrigger("Dodge");
+}
+dodge = map.FindAction("Dodge");
+dodge.performed += DodgeInput;
