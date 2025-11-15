@@ -1,1 +1,83 @@
 
+using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
+
+public class GameUI : MonoBehaviour
+{
+    [Header("UI Panels")]
+    public GameObject startPanel;
+    public GameObject gameplayUI;
+    public GameObject endPanel;
+
+    [Header("UI Elements")]
+    public TMP_InputField nameInput;
+    public TextMeshProUGUI livesText;
+    public TextMeshProUGUI timerText;
+    public TextMeshProUGUI endText;
+
+    [Header("References")]
+    public PlayerSc player;
+
+    private float gameTime = 0f;
+    private bool gameStarted = false;
+
+    void Start()
+    {
+        gameplayUI.SetActive(false);
+        endPanel.SetActive(false);
+        startPanel.SetActive(true);
+
+        Time.timeScale = 0f;
+    }
+
+    void Update()
+    {
+        if (!gameStarted) return;
+
+        // Update timer
+        gameTime += Time.deltaTime;
+        timerText.text = gameTime.ToString("0.0");
+
+        // Update lives UI
+        livesText.text = "Lives: " + player.lives;
+
+        // Check lose condition
+        if (player.lives <= 0 && !endPanel.activeSelf)
+            LoseGame();
+    }
+
+    public void StartGame()
+    {
+        if (nameInput.text.Length <= 0)
+            return;
+
+        startPanel.SetActive(false);
+        gameplayUI.SetActive(true);
+
+        gameStarted = true;
+        Time.timeScale = 1f;
+    }
+
+    public void WinGame()
+    {
+        gameStarted = false;
+
+        gameplayUI.SetActive(false);
+        endPanel.SetActive(true);
+
+        endText.text = nameInput.text + "\nTime: " + gameTime.ToString("0.0") + " sec";
+    }
+
+    void LoseGame()
+    {
+        gameStarted = false;
+
+        gameplayUI.SetActive(false);
+        endPanel.SetActive(true);
+
+        endText.text = "You Lose";
+
+        player.Die();
+    }
+}
