@@ -1,60 +1,141 @@
-private void OnGUI()
+using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.UI;              // ➜ added for UI support
+using UnityEngine.EventSystems;    // ➜ added to avoid input conflicts with new Input System
+
+public class PlayerSc : MonoBehaviour
+{
+    [Header("Components")]
+    [SerializeField] private CharacterController charController;
+    [SerializeField] private InputActionAsset inputAction;
+    [SerializeField] private Animator animator;
+
+    [Header("Movement Settings")]
+    [SerializeField] private float walkSpeed = 5f;
+    [SerializeField] private float sprintSpeed = 8f;
+    [SerializeField] private float jumpHeight = 2f;
+    [SerializeField] private float gravity = 9.8f;
+    [SerializeField] private Transform respawnPoint;
+
+    private InputAction move, look, sprint, jump, melee;
+    private Vector2 moveInput, lookInput;
+    private Vector3 velocity;
+    private bool isSprinting;
+    private bool hasWon = false;
+    private bool isJumping = false;
+
+    [Header("Combat")]
+    public Collider handHitbox;
+
+    private bool isGrounded => charController.isGrounded;
+
+    private void OnEnable()
     {
-        if (!isConfirmed && !IsOk) 
+        var map = inputAction.FindActionMap("Player");
+        map.Enable();
+
+        move = map.FindAction("Move");
+        look = map.FindAction("Look");
+        sprint = map.FindAction("Sprint");
+        jump = map.FindAction("Jump");
+        melee = map.FindAction("Meele");
+
+        sprint.performed += ctx => { if (!hasWon) isSprinting = true; };
+        sprint.canceled += ctx => { if (!hasWon) isSprinting = false; };
+        jump.performed += JumpInput;
+        melee.performed += MeleeAttack;
+    }
+
+    private void Update()
+    {
+        if (!hasWon)
         {
-            GUI.Box(
-                new Rect(ScreenWidthHalf / 2, ScreenHeightHalf / 2 - 30, ScreenWidthHalf, ScreenHeightHalf + 60),
-                "Game Controller GUI"
-            );
+            HandleMovement();
+            HandleRotation();
 
+            if (transform.position.y < -10f)
+                Respawn();
+        }
+    }
 
-            GUI.Label(new Rect(ScreenWidthHalf / 2 + 20, ScreenHeightHalf / 2 + 8, 200, 30),
-                $"Target Count: {targetCount}");
+    private void HandleMovement()
+    {
+        moveInput = move.ReadValue<Vector2>();
+        float currentSpeed = isSprinting ? sprintSpeed : walkSpeed;
+        Vector3 moveDir = transform.TransformDirection(new Vector3(moveInput.x, 0, moveInput.y)) * currentSpeed;
 
-            targetCount = GUI.HorizontalSlider(new Rect(ScreenWidthHalf / 2 + 120, ScreenHeightHalf / 2 + 10, 200, 30),
-                targetCount, 1, 4);
-            targetCount = Mathf.Round(targetCount); 
+        if (isGrounded && velocity.y <= 0)
+        {
+            velocity.y = -1f;
+            animator.SetBool("Fall", false);
 
-
-            GUI.Label(new Rect(ScreenWidthHalf / 2 + 20, ScreenHeightHalf / 2 + 40, 200, 30),
-                $"Target Life: {targetLife}");
-  
-            targetLife = GUI.HorizontalSlider(new Rect(ScreenWidthHalf / 2 + 120, ScreenHeightHalf / 2 + 42, 200, 30),
-                targetLife, 1, 3);
-            targetLife = Mathf.Round(targetLife);
-
-            GUI.Label(new Rect(ScreenWidthHalf / 2 + 20, ScreenHeightHalf / 2 + 72, 200, 30), "Player Name:");
-            playerName = GUI.TextField(new Rect(ScreenWidthHalf / 2 + 120, ScreenHeightHalf / 2 + 72, 200, 30),
-                playerName);
-
-            GUI.Label(new Rect(ScreenWidthHalf / 2 + 20, ScreenHeightHalf / 2 + 104, 300, 30), "Player Color:");
-            GUI.Label(new Rect(ScreenWidthHalf / 2 + 110, ScreenHeightHalf / 2 + 104, 50, 30), $"R:{red}");
-            GUI.Label(new Rect(ScreenWidthHalf / 2 + 170, ScreenHeightHalf / 2 + 104, 50, 30), $"G:{green}");
-            GUI.Label(new Rect(ScreenWidthHalf / 2 + 230, ScreenHeightHalf / 2 + 104, 50, 30), $"B:{blue}");
-
-
-            red = GUI.VerticalSlider(new Rect(ScreenWidthHalf / 2 + 120, ScreenHeightHalf / 2 + 130, 20, 80), red, 255, 0);
-            green = GUI.VerticalSlider(new Rect(ScreenWidthHalf / 2 + 180, ScreenHeightHalf / 2 + 130, 20, 80), green, 255, 0);
-            blue = GUI.VerticalSlider(new Rect(ScreenWidthHalf / 2 + 240, ScreenHeightHalf / 2 + 130, 20, 80), blue, 255, 0);
-            red = Mathf.Round(red);
-            green = Mathf.Round(green);
-            blue = Mathf.Round(blue);
-
-
-            isConfirmed = GUI.Button(new Rect(ScreenWidthHalf / 2 + 280, ScreenHeightHalf / 2 + 120, 100, 30), "Confirm");
-            isReset = GUI.Button(new Rect(ScreenWidthHalf / 2 + 280, ScreenHeightHalf / 2 + 165, 100, 30), "Reset");
+            if (isJumping)
+                isJumping = false;
+        }
+        else
+        {
+            velocity.y -= gravity * Time.deltaTime;
+            if (velocity.y < -0.01f)
+                animator.SetBool("Fall", true);
         }
 
+        charController.Move((moveDir + velocity) * Time.deltaTime);
 
-        if (isConfirmed && !string.IsNullOrEmpty(playerName) && !IsOk) 
-        {
+        float forward = moveInput.y;
+        float walkAmount = Mathf.Abs(moveInput.y);
+        animator.SetFloat("Walk", walkAmount);
+        animator.SetFloat("Forward", forward);
+        animator.SetBool("Run", isSprinting && forward > 0.1f);
+    }
 
-            GUI.Box(new Rect(ScreenWidthHalf / 2, ScreenHeightHalf / 2 - 30, ScreenWidthHalf, ScreenHeightHalf + 30), "Confirm Details");
-            GUI.Label(new Rect(ScreenWidthHalf / 2 + 20, ScreenHeightHalf / 2 + 8, 300, 30), $"Player Name: {playerName}");
-            GUI.Label(new Rect(ScreenWidthHalf / 2 + 20, ScreenHeightHalf / 2 + 40, 300, 30), $"Target Count: {targetCount}");
-            GUI.Label(new Rect(ScreenWidthHalf / 2 + 20, ScreenHeightHalf / 2 + 72, 300, 30), $"Target Life: {targetLife}");
+    private void JumpInput(InputAction.CallbackContext context)
+    {
+        if (hasWon || isJumping || !isGrounded) return;
 
+        isJumping = true;
+        velocity.y = Mathf.Sqrt(jumpHeight * 2f * gravity);
 
-            IsOk = GUI.Button(new Rect(ScreenWidthHalf / 2 + 65, ScreenHeightHalf / 2 + 140, 100, 30), "OK");
-            if (GUI.Button(new Rect(ScreenWidthHalf / 2 + 220, ScreenHeightHalf / 2 + 140, 100, 30), "Back"))
-                isConfirmed = false;
+        animator.ResetTrigger("Meele");
+        animator.SetTrigger("Jump");
+        animator.SetBool("Fall", false);
+    }
+
+    private void MeleeAttack(InputAction.CallbackContext context)
+    {
+        if (hasWon || isJumping) return;
+
+        animator.ResetTrigger("Jump");
+        animator.ResetTrigger("Meele");
+        animator.SetTrigger("Meele");
+    }
+
+    private void HandleRotation()
+    {
+        lookInput = look.ReadValue<Vector2>();
+        transform.Rotate(0f, lookInput.x, 0f);
+    }
+
+    private void Respawn()
+    {
+        velocity = Vector3.zero;
+        charController.enabled = false;
+        transform.position = respawnPoint.position;
+        charController.enabled = true;
+    }
+
+    public void Win()
+    {
+        hasWon = true;
+        charController.enabled = false;
+
+        animator.SetFloat("Walk", 0f);
+        animator.SetBool("Run", false);
+        animator.SetBool("Fall", false);
+
+        animator.ResetTrigger("Jump");
+        animator.ResetTrigger("Meele");
+        animator.SetTrigger("Win");
+
+        Debug.Log("Win animation triggered!");
+    }
+}
