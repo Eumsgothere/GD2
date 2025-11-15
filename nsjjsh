@@ -15,7 +15,7 @@ public class RotatingObstacle : MonoBehaviour
 
         if (player != null)
         {
-            player.TakeDamage();
+            player.TakeDamage(1);
         }
     }
 }
