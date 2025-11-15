@@ -1,21 +1,30 @@
-using UnityEngine;
-
-public class RotatingObstacle : MonoBehaviour
+private void HandleRotation()
 {
-    public float rotationSpeed = 90f;
+    if (gameOver || hasWon || !gameStarted) return;
 
-    private void Update()
+    lookInput = look.ReadValue<Vector2>();
+    transform.Rotate(0f, lookInput.x, 0f);
+}
+
+public void TakeDamage(int amount = 1)
+{
+    if (gameOver || hasWon) return;
+
+    playerLife -= amount;
+
+    // Respawn player immediately
+    Respawn();
+
+    if (playerLife <= 0)
     {
-        transform.Rotate(0, rotationSpeed * Time.deltaTime, 0);
+        playerLife = 0;
+        gameOver = true;
     }
-
-    private void OnTriggerEnter(Collider other)
-    {
-        PlayerSc player = other.GetComponent<PlayerSc>();
-
-        if (player != null)
-        {
-            player.TakeDamage(1);
-        }
-    }
+}
+private void Respawn()
+{
+    velocity = Vector3.zero;
+    charController.enabled = false;
+    transform.position = respawnPoint.position;
+    charController.enabled = true;
 }
