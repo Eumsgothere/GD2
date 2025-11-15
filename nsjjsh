@@ -1,58 +1,21 @@
-private bool canMove = false;  
+using UnityEngine;
 
-if (GUI.Button(new Rect(Screen.width / 2 - 60, Screen.height / 2 + 20, 120, 40), "START"))
+public class RotatingObstacle : MonoBehaviour
 {
-    if (playerName.Trim() != "")
+    public float rotationSpeed = 90f;
+
+    private void Update()
     {
-        gameStarted = true;
-        canMove = true;     // <-- player can move after start
+        transform.Rotate(0, rotationSpeed * Time.deltaTime, 0);
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        PlayerSc player = other.GetComponent<PlayerSc>();
+
+        if (player != null)
+        {
+            player.TakeDamage();
+        }
     }
 }
-
-GUI.Label(new Rect(40, 30, 200, 40), $"Life: {life}", label);
-
-private void HandleMovement()
-{
-    if (!canMove) return;   // BLOCK movement when entering name or win/lose
-
-    moveInput = move.ReadValue<Vector2>();
-    ...
-}
-
-
-private void JumpInput(InputAction.CallbackContext context)
-{
-    if (!gameStarted || !canMove) return;
-
-private void MeleeAttack(InputAction.CallbackContext context)
-{
-    if (!gameStarted || !canMove) return;
-public void TakeDamage(int amount)
-{
-    if (!canMove) return;
-
-    life -= amount;
-
-    if (life <= 0)
-    {
-        life = 0;
-        canMove = false;
-        gameOver = true;
-    }
-}
-public void Win()
-{
-    hasWon = true;
-    canMove = false;
-
-    charController.enabled = false;
-
-    animator.SetFloat("Walk", 0);
-    animator.SetBool("Run", false);
-    animator.SetBool("Fall", false);
-
-    animator.ResetTrigger("Jump");
-    animator.ResetTrigger("Meele");
-    animator.SetTrigger("Win");
-}
-
