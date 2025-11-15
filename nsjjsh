@@ -1,23 +1,16 @@
-using UnityEngine;
+public int life = 5;
 
-public class RotatingObstacle : MonoBehaviour
+public void TakeDamage(int amount)
 {
-    public float rotationSpeed = 90f; 
+    if (!canMove) return;
 
-    private void Update()
-    {
-        transform.Rotate(0, rotationSpeed * Time.deltaTime, 0);
-    }
+    life -= amount;
 
-    private void OnTriggerEnter(Collider other)
+    if (life <= 0)
     {
-        if (other.CompareTag("Player"))
-        {
-            PlayerSc player = other.GetComponent<PlayerSc>();
-            if (player != null)
-            {
-                player.TakeDamage(1);
-            }
-        }
+        life = 0;
+        GameUI.Instance.ShowLose(); // if you have UI
+        canMove = false;            // disable controls
+        // trigger die animation if you have one
     }
 }
