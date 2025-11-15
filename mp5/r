@@ -1,83 +1,201 @@
-
 using UnityEngine;
-using UnityEngine.UI;
-using TMPro;
+using UnityEngine.InputSystem;
 
-public class GameUI : MonoBehaviour
+public class PlayerSc : MonoBehaviour
 {
-    [Header("UI Panels")]
-    public GameObject startPanel;
-    public GameObject gameplayUI;
-    public GameObject endPanel;
+    [Header("Components")]
+    [SerializeField] private CharacterController charController;
+    [SerializeField] private InputActionAsset inputAction;
+    [SerializeField] private Animator animator;
 
-    [Header("UI Elements")]
-    public TMP_InputField nameInput;
-    public TextMeshProUGUI livesText;
-    public TextMeshProUGUI timerText;
-    public TextMeshProUGUI endText;
+    [Header("Movement Settings")]
+    [SerializeField] private float walkSpeed = 5f;
+    [SerializeField] private float sprintSpeed = 8f;
+    [SerializeField] private float jumpHeight = 2f;
+    [SerializeField] private float gravity = 9.8f;
+    [SerializeField] private Transform respawnPoint;
 
-    [Header("References")]
-    public PlayerSc player;
+    private InputAction move, look, sprint, jump, melee, dodge;
+    private Vector2 moveInput, lookInput;
+    private Vector3 velocity;
+    private bool isSprinting;
+    private bool hasWon = false;
+    private bool isJumping = false;
+    private bool isDodging = false;
+    private bool isDead = false;
 
-    private float gameTime = 0f;
-    private bool gameStarted = false;
+    [Header("Combat")]
+    public Collider handHitbox;
 
-    void Start()
+    [Header("Ability Unlocks")]
+    public bool canAttack = false;
+    public bool canJumpDodge = false;
+
+    public int lives = 5;
+
+    private bool isGrounded => charController.isGrounded;
+
+    private void OnEnable()
     {
-        gameplayUI.SetActive(false);
-        endPanel.SetActive(false);
-        startPanel.SetActive(true);
+        var map = inputAction.FindActionMap("Player");
+        map.Enable();
 
-        Time.timeScale = 0f;
+        move = map.FindAction("Move");
+        look = map.FindAction("Look");
+        sprint = map.FindAction("Sprint");
+        jump = map.FindAction("Jump");
+        melee = map.FindAction("Meele");
+        dodge = map.FindAction("Dodge");
+
+        sprint.performed += ctx => { if (!hasWon) isSprinting = true; };
+        sprint.canceled += ctx => { if (!hasWon) isSprinting = false; };
+
+        jump.performed += JumpInput;
+        melee.performed += MeleeAttack;
+        dodge.performed += DodgeInput;
     }
 
-    void Update()
+    private void Update()
     {
-        if (!gameStarted) return;
+        if (hasWon || isDead) return;
 
-        // Update timer
-        gameTime += Time.deltaTime;
-        timerText.text = gameTime.ToString("0.0");
+        HandleMovement();
+        HandleRotation();
 
-        // Update lives UI
-        livesText.text = "Lives: " + player.lives;
-
-        // Check lose condition
-        if (player.lives <= 0 && !endPanel.activeSelf)
-            LoseGame();
+        if (transform.position.y < -10f)
+            Respawn();
     }
 
-    public void StartGame()
+    private void HandleMovement()
     {
-        if (nameInput.text.Length <= 0)
-            return;
+        moveInput = move.ReadValue<Vector2>();
+        float currentSpeed = isSprinting ? sprintSpeed : walkSpeed;
 
-        startPanel.SetActive(false);
-        gameplayUI.SetActive(true);
+        if (isDodging) return;
 
-        gameStarted = true;
-        Time.timeScale = 1f;
+        Vector3 moveDir = transform.TransformDirection(new Vector3(moveInput.x, 0, moveInput.y)) * currentSpeed;
+
+        if (isGrounded && velocity.y <= 0)
+        {
+            velocity.y = -1f;
+            animator.SetBool("Fall", false);
+            isJumping = false;
+        }
+        else
+        {
+            velocity.y -= gravity * Time.deltaTime;
+            if (velocity.y < -0.1f)
+                animator.SetBool("Fall", true);
+        }
+
+        charController.Move((moveDir + velocity) * Time.deltaTime);
+
+        float forward = moveInput.y;
+        animator.SetFloat("Walk", Mathf.Abs(moveInput.y));
+        animator.SetBool("Run", isSprinting && forward > 0.1f);
     }
 
-    public void WinGame()
+    private void JumpInput(InputAction.CallbackContext context)
     {
-        gameStarted = false;
+        if (!canJumpDodge) return;
+        if (hasWon || isJumping || !isGrounded || isDead) return;
 
-        gameplayUI.SetActive(false);
-        endPanel.SetActive(true);
+        isJumping = true;
+        velocity.y = Mathf.Sqrt(jumpHeight * 2f * gravity);
 
-        endText.text = nameInput.text + "\nTime: " + gameTime.ToString("0.0") + " sec";
+        animator.SetTrigger("Jump");
+        animator.SetBool("Fall", false);
     }
 
-    void LoseGame()
+    private void DodgeInput(InputAction.CallbackContext ctx)
     {
-        gameStarted = false;
+        if (!canJumpDodge || !isGrounded || isDodging || hasWon || isDead) return;
 
-        gameplayUI.SetActive(false);
-        endPanel.SetActive(true);
+        isDodging = true;
+        animator.SetTrigger("Dodge");
 
-        endText.text = "You Lose";
+        Vector3 dodgeDir = transform.forward * 7f;
+        StartCoroutine(DodgeRoutine(dodgeDir));
+    }
 
-        player.Die();
+    private System.Collections.IEnumerator DodgeRoutine(Vector3 dir)
+    {
+        float t = 0.25f;
+        while (t > 0)
+        {
+            charController.Move(dir * Time.deltaTime);
+            t -= Time.deltaTime;
+            yield return null;
+        }
+        isDodging = false;
+    }
+
+    private void MeleeAttack(InputAction.CallbackContext context)
+    {
+        if (!canAttack) return;
+        if (hasWon || isJumping || isDodging || isDead) return;
+
+        animator.SetTrigger("Meele");
+    }
+
+    private void HandleRotation()
+    {
+        lookInput = look.ReadValue<Vector2>();
+        transform.Rotate(0f, lookInput.x, 0f);
+    }
+
+    private void Respawn()
+    {
+        velocity = Vector3.zero;
+        charController.enabled = false;
+        transform.position = respawnPoint.position;
+        charController.enabled = true;
+    }
+
+    public void Hit(Vector3 knockbackDir)
+    {
+        if (isDead || hasWon) return;
+
+        animator.SetTrigger("Hit");
+        StartCoroutine(KnockbackRoutine(knockbackDir));
+    }
+
+    private System.Collections.IEnumerator KnockbackRoutine(Vector3 dir)
+    {
+        float duration = 0.25f;
+        while (duration > 0)
+        {
+            charController.Move(dir * Time.deltaTime);
+            duration -= Time.deltaTime;
+            yield return null;
+        }
+    }
+
+    public void TakeDamage(int amount)
+    {
+        lives -= amount;
+
+        if (lives <= 0)
+            Die();
+    }
+
+    public void Die()
+    {
+        if (isDead) return;
+        isDead = true;
+
+        animator.SetTrigger("Death");
+        charController.enabled = false;
+    }
+
+    public void Win()
+    {
+        hasWon = true;
+
+        animator.ResetTrigger("Jump");
+        animator.ResetTrigger("Meele");
+        animator.SetTrigger("Win");
+
+        charController.enabled = false;
     }
 }
