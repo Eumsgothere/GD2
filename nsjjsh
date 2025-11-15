@@ -1,40 +1,9 @@
-public void EnableWeapon()
-{
-    handHitbox.enabled = true;
-}
-
-public void DisableWeapon()
-{
-    handHitbox.enabled = false;
-}
-
-using UnityEngine;
-
-public class GameManager : MonoBehaviour
-{
-    public static GameManager Instance;
-
-    public int totalCubes;
-    private int destroyedCubes = 0;
-    public PlayerSc player;
-
-    private void Awake()
+private void DodgeInput(InputAction.CallbackContext context)
     {
-        Instance = this;
-    }
+        if (!gameStarted || !canMove || !canDodge return;
+        if (hasWon || isJumping) return;
 
-    public void CubeDestroyed()
-    {
-        destroyedCubes++;
-        if (destroyedCubes >= totalCubes)
-        {
-            player.EnableJumpAndDodge();
-        }
+        animator.ResetTrigger("Jump");
+        animator.ResetTrigger("Meele");
+        animator.SetTrigger("Dodge");
     }
-}
-public void EnableJumpAndDodge()
-{
-    canJump = true; // you already handle jump logic
-    canDodge = true; // add dodge logic if needed
-    // Optional: show UI cue or animation feedback
-}
