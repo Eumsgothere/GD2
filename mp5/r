@@ -1,141 +1,42 @@
-using UnityEngine;
-using UnityEngine.InputSystem;
-using UnityEngine.UI;              // ➜ added for UI support
-using UnityEngine.EventSystems;    // ➜ added to avoid input conflicts with new Input System
-
-public class PlayerSc : MonoBehaviour
+private void OnGUI()
 {
-    [Header("Components")]
-    [SerializeField] private CharacterController charController;
-    [SerializeField] private InputActionAsset inputAction;
-    [SerializeField] private Animator animator;
+    // ====== BASIC UI STYLE ======
+    GUIStyle barText = new GUIStyle(GUI.skin.label);
+    barText.fontSize = 16;
+    barText.normal.textColor = Color.white;
 
-    [Header("Movement Settings")]
-    [SerializeField] private float walkSpeed = 5f;
-    [SerializeField] private float sprintSpeed = 8f;
-    [SerializeField] private float jumpHeight = 2f;
-    [SerializeField] private float gravity = 9.8f;
-    [SerializeField] private Transform respawnPoint;
+    float barWidth = 200;
+    float barHeight = 20;
 
-    private InputAction move, look, sprint, jump, melee;
-    private Vector2 moveInput, lookInput;
-    private Vector3 velocity;
-    private bool isSprinting;
-    private bool hasWon = false;
-    private bool isJumping = false;
+    // =============== HEALTH BAR ===============
+    GUI.Box(new Rect(20, 20, barWidth, barHeight), "");
+    GUI.Box(new Rect(20, 20, barWidth * 1f, barHeight), "HP: 100", barText); 
+    // Change "1f" to health/maxHealth later
 
-    [Header("Combat")]
-    public Collider handHitbox;
+    // =============== STAMINA/SPRINT BAR ===============
+    GUI.Box(new Rect(20, 50, barWidth, barHeight), "");
+    float sprintValue = isSprinting ? 1f : 0.3f;
+    GUI.Box(new Rect(20, 50, barWidth * sprintValue, barHeight), "Stamina", barText);
 
-    private bool isGrounded => charController.isGrounded;
+    // =============== CROSSHAIR ===============
+    float cx = Screen.width / 2;
+    float cy = Screen.height / 2;
 
-    private void OnEnable()
+    GUI.Label(new Rect(cx - 5, cy - 1, 10, 2), "|");
+    GUI.Label(new Rect(cx - 1, cy - 5, 2, 10), "|");
+
+    // =============== WIN SCREEN ===============
+    if (hasWon)
     {
-        var map = inputAction.FindActionMap("Player");
-        map.Enable();
+        GUIStyle winStyle = new GUIStyle(GUI.skin.label);
+        winStyle.fontSize = 40;
+        winStyle.fontStyle = FontStyle.Bold;
+        winStyle.normal.textColor = Color.yellow;
 
-        move = map.FindAction("Move");
-        look = map.FindAction("Look");
-        sprint = map.FindAction("Sprint");
-        jump = map.FindAction("Jump");
-        melee = map.FindAction("Meele");
-
-        sprint.performed += ctx => { if (!hasWon) isSprinting = true; };
-        sprint.canceled += ctx => { if (!hasWon) isSprinting = false; };
-        jump.performed += JumpInput;
-        melee.performed += MeleeAttack;
-    }
-
-    private void Update()
-    {
-        if (!hasWon)
-        {
-            HandleMovement();
-            HandleRotation();
-
-            if (transform.position.y < -10f)
-                Respawn();
-        }
-    }
-
-    private void HandleMovement()
-    {
-        moveInput = move.ReadValue<Vector2>();
-        float currentSpeed = isSprinting ? sprintSpeed : walkSpeed;
-        Vector3 moveDir = transform.TransformDirection(new Vector3(moveInput.x, 0, moveInput.y)) * currentSpeed;
-
-        if (isGrounded && velocity.y <= 0)
-        {
-            velocity.y = -1f;
-            animator.SetBool("Fall", false);
-
-            if (isJumping)
-                isJumping = false;
-        }
-        else
-        {
-            velocity.y -= gravity * Time.deltaTime;
-            if (velocity.y < -0.01f)
-                animator.SetBool("Fall", true);
-        }
-
-        charController.Move((moveDir + velocity) * Time.deltaTime);
-
-        float forward = moveInput.y;
-        float walkAmount = Mathf.Abs(moveInput.y);
-        animator.SetFloat("Walk", walkAmount);
-        animator.SetFloat("Forward", forward);
-        animator.SetBool("Run", isSprinting && forward > 0.1f);
-    }
-
-    private void JumpInput(InputAction.CallbackContext context)
-    {
-        if (hasWon || isJumping || !isGrounded) return;
-
-        isJumping = true;
-        velocity.y = Mathf.Sqrt(jumpHeight * 2f * gravity);
-
-        animator.ResetTrigger("Meele");
-        animator.SetTrigger("Jump");
-        animator.SetBool("Fall", false);
-    }
-
-    private void MeleeAttack(InputAction.CallbackContext context)
-    {
-        if (hasWon || isJumping) return;
-
-        animator.ResetTrigger("Jump");
-        animator.ResetTrigger("Meele");
-        animator.SetTrigger("Meele");
-    }
-
-    private void HandleRotation()
-    {
-        lookInput = look.ReadValue<Vector2>();
-        transform.Rotate(0f, lookInput.x, 0f);
-    }
-
-    private void Respawn()
-    {
-        velocity = Vector3.zero;
-        charController.enabled = false;
-        transform.position = respawnPoint.position;
-        charController.enabled = true;
-    }
-
-    public void Win()
-    {
-        hasWon = true;
-        charController.enabled = false;
-
-        animator.SetFloat("Walk", 0f);
-        animator.SetBool("Run", false);
-        animator.SetBool("Fall", false);
-
-        animator.ResetTrigger("Jump");
-        animator.ResetTrigger("Meele");
-        animator.SetTrigger("Win");
-
-        Debug.Log("Win animation triggered!");
+        GUI.Label(
+            new Rect(Screen.width / 2 - 150, Screen.height / 2 - 50, 300, 100),
+            "YOU WIN!",
+            winStyle
+        );
     }
 }
