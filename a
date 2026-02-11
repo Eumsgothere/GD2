@@ -1,0 +1,32 @@
+using UnityEngine;
+using UnityEngine.UI;
+public class MenuSc : MonoBehaviour
+{
+    [SerializeField] GameObject agent;
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    public void OnStartButtonClicked()
+    {
+    }
+    void Start()
+    {
+
+    }
+
+
+    void Update()
+    {
+
+    }
+
+    public void HideMenuUI()
+    {
+        gameObject.SetActive(false);        
+    }
+    public void ShowPlayer(GameObject agent)
+    {
+        agent = gameObject.SetActive(true);
+    }
+
+
+}
+
