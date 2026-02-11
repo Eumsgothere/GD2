@@ -1,109 +1,45 @@
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.AI;   // Needed for NavMeshAgent
 
-public class GameMenuController : MonoBehaviour
+public class MenuSc : MonoBehaviour
 {
-    [Header("UI Elements")]
-    public Dropdown speedDropdown;
-    public Dropdown difficultyDropdown;
-    public Button startButton;
-    public Text timerText;
-    public GameObject menuCanvas;
+    [SerializeField] private GameObject agent;   // Reference to the agent GameObject
+    [SerializeField] private GameObject menuUI;  // Reference to the menu Canvas/UI
 
-    [Header("Game Settings")]
-    public GameObject agent;
-    public GameObject gameOverObject;
-    public GameObject obstaclePrefab;
-    public Transform obstacleParent;
-
-    private float gameSpeed = 2f;
-    private int obstacleCount = 15;
-    private float timer = 0f;
-    private bool isGameRunning = false;
-
-    private NavMeshAgent navAgent;
+    // Called when Start button is clicked
+    public void OnStartButtonClicked()
+    {
+        HideMenuUI();       // Hide the menu
+        ShowPlayer();       // Show/activate the agent
+    }
 
     void Start()
     {
-        // Hide timer at start
-        timerText.gameObject.SetActive(false);
-
-        // Hook up Start button
-        startButton.onClick.AddListener(OnStartGame);
-
-        // Get NavMeshAgent reference
-        navAgent = agent.GetComponent<NavMeshAgent>();
-        if (navAgent != null)
+        // Ensure agent is hidden at the beginning
+        if (agent != null)
         {
-            navAgent.enabled = false; // Disabled until Start is clicked
+            agent.SetActive(false);
         }
     }
 
     void Update()
     {
-        if (isGameRunning)
+        // Optional: add timer or other logic here
+    }
+
+    public void HideMenuUI()
+    {
+        if (menuUI != null)
         {
-            timer += Time.deltaTime;
-            timerText.text = timer.ToString("F2");
+            menuUI.SetActive(false);
         }
     }
 
-    void OnStartGame()
+    public void ShowPlayer()
     {
-        // Set agent speed from dropdown
-        switch (speedDropdown.value)
+        if (agent != null)
         {
-            case 0: gameSpeed = 2f; break;
-            case 1: gameSpeed = 3f; break;
-            case 2: gameSpeed = 4f; break;
-        }
-
-        // Set difficulty (obstacle count)
-        switch (difficultyDropdown.value)
-        {
-            case 0: obstacleCount = 15; break; // Easy
-            case 1: obstacleCount = 8; break;  // Hard
-        }
-
-        // Spawn obstacles
-        SpawnObstacles(obstacleCount);
-
-        // Hide menu, show timer
-        menuCanvas.SetActive(false);
-        timerText.gameObject.SetActive(true);
-
-        // Start game
-        isGameRunning = true;
-
-        // Activate NavMeshAgent and set destination
-        if (navAgent != null)
-        {
-            navAgent.enabled = true;
-            navAgent.speed = gameSpeed;
-            navAgent.SetDestination(gameOverObject.transform.position);
-        }
-    }
-
-    void SpawnObstacles(int count)
-    {
-        for (int i = 0; i < count; i++)
-        {
-            Vector3 randomPos = new Vector3(Random.Range(-5f, 5f), 0, Random.Range(-5f, 5f));
-            Instantiate(obstaclePrefab, randomPos, Quaternion.identity, obstacleParent);
-        }
-    }
-
-    private void OnTriggerEnter(Collider other)
-    {
-        if (other.gameObject == gameOverObject)
-        {
-            isGameRunning = false;
-
-            if (navAgent != null)
-            {
-                navAgent.isStopped = true; // Stop agent when reaching GameOver
-            }
+            agent.SetActive(true);
         }
     }
 }
