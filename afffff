@@ -1,26 +1,45 @@
-using System.Runtime.ConstrainedExecution;
 using UnityEngine;
+using UnityEngine.UI;
 
-public class FinalPlat : MonoBehaviour
+public class MenuSc : MonoBehaviour
 {
-    float sp = .01f;
-    Transform cubeTrans;
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    [SerializeField] private GameObject agent;   // Reference to the agent GameObject
+    [SerializeField] private GameObject menuUI;  // Reference to the menu Canvas/UI
+
+    // Called when Start button is clicked
+    public void OnStartButtonClicked()
+    {
+        HideMenuUI();       // Hide the menu
+        ShowPlayer();       // Show/activate the agent
+    }
+
     void Start()
     {
+        // Ensure agent is hidden at the beginning
+        if (agent != null)
+        {
+            agent.SetActive(false);
+        }
     }
-    // Update is called once per frame
+
     void Update()
     {
+        // Optional: add timer or other logic here
+    }
 
-        if (cubeTrans.position.z >= 15)
+    public void HideMenuUI()
+    {
+        if (menuUI != null)
         {
-            sp = -.1f;
+            menuUI.SetActive(false);
         }
-        else if (cubeTrans.position.z <= -15)
-        {
-            sp = 0.1f;
-        }    
+    }
 
+    public void ShowPlayer()
+    {
+        if (agent != null)
+        {
+            agent.SetActive(true);
+        }
     }
 }
